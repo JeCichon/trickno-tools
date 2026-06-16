@@ -481,15 +481,41 @@ function getCtx(){
   return ctx;
 }
 
+// ── "Color of Sound" chart data (Melendez/Goss, flutopedia.com) ──
+const COS_RED_RAMP=[
+  {v:0.32,f:349.2,note:'F'},{v:0.45,f:370.0,note:'F#'},
+  {v:0.70,f:392.0,note:'G'},{v:0.93,f:415.3,note:'G#'},
+  {v:1.00,f:440.0,note:'A'}
+];
+const COS_SPECTRUM=[
+  {h:23, f:440.0,note:'A'}, {h:56, f:466.2,note:'A#'}, {h:84, f:493.9,note:'B'},
+  {h:111,f:523.2,note:'C'}, {h:175,f:554.4,note:'C#'},{h:211,f:587.3,note:'D'},
+  {h:241,f:622.2,note:'D#'},{h:258,f:659.3,note:'E'}, {h:273,f:698.5,note:'F'}
+];
 function rgbToFreq(r,g,b){
   const rr=r/255,gg=g/255,bb=b/255;
   const mx=Math.max(rr,gg,bb),mn=Math.min(rr,gg,bb),d=mx-mn;
   let h=0,s=mx===0?0:d/mx,v=mx;
   if(d){if(mx===rr)h=((gg-bb)/d+6)%6;else if(mx===gg)h=(bb-rr)/d+2;else h=(rr-gg)/d+4;h*=60;}
-  if(v<.04)return 174.6;if(s<.12)return 400+v*200;
-  const ref=[[0,355],[23,415],[38,453],[55,466],[84,494],[120,512],[174,554],[180,523],[210,587],[241,622],[256,659],[273,698],[300,349],[360,355]];
-  for(let i=0;i<ref.length-1;i++){const[h0,f0]=ref[i],[h1,f1]=ref[i+1];if(h>=h0&&h<=h1)return f0+(h-h0)/(h1-h0)*(f1-f0);}
-  return 440;
+  if(v<.04) return 174.6;
+  if(s<.12) return 400+v*200;
+  if(h<23){
+    const vv=Math.max(0.32,Math.min(1,v));
+    for(let i=0;i<COS_RED_RAMP.length-1;i++){
+      const a=COS_RED_RAMP[i],b2=COS_RED_RAMP[i+1];
+      if(vv>=a.v&&vv<=b2.v) return a.f+(vv-a.v)/(b2.v-a.v)*(b2.f-a.f);
+    }
+    return COS_RED_RAMP[0].f;
+  }
+  if(h<=273){
+    for(let i=0;i<COS_SPECTRUM.length-1;i++){
+      const a=COS_SPECTRUM[i],b2=COS_SPECTRUM[i+1];
+      if(h>=a.h&&h<=b2.h) return a.f+(h-a.h)/(b2.h-a.h)*(b2.f-a.f);
+    }
+    return COS_SPECTRUM[COS_SPECTRUM.length-1].f;
+  }
+  const t=(h-273)/(360-273);
+  return 698.5+(349.2-698.5)*t;
 }
 
 function toCMYK(r,g,b){
