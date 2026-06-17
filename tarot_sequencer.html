@@ -480,9 +480,13 @@ async function loadSupabaseCards(){
 let currentSongId=null,currentSongName='';
 const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
+async function sbErrorText(res){
+  try{const body=await res.json();return body.message||body.hint||body.error||JSON.stringify(body);}
+  catch(e){return 'HTTP '+res.status;}
+}
 async function fetchSongsList(){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?select=id,name,bpm,step_count,updated_at&order=updated_at.desc`,{headers:SB_HEADERS});
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  if(!res.ok) throw new Error(await sbErrorText(res));
   return await res.json();
 }
 async function saveSongNew(name){
@@ -491,7 +495,7 @@ async function saveSongNew(name){
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
     body:JSON.stringify({name,bpm,step_count:stepCount,tracks})
   });
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
   return rows[0];
 }
@@ -501,17 +505,17 @@ async function updateSong(id,name){
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
     body:JSON.stringify({name,bpm,step_count:stepCount,tracks,updated_at:new Date().toISOString()})
   });
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
   return rows[0];
 }
 async function deleteSong(id){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?id=eq.${id}`,{method:'DELETE',headers:SB_HEADERS});
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  if(!res.ok) throw new Error(await sbErrorText(res));
 }
 async function fetchSongFull(id){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?id=eq.${id}&select=*`,{headers:SB_HEADERS});
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
   return rows[0];
 }
@@ -561,7 +565,7 @@ document.getElementById('sp-save-new').addEventListener('click',async()=>{
     statusEl.textContent='Saved!';statusEl.style.color='rgba(140,220,140,.8)';
     setTimeout(closeSavePopup,700);
   }catch(e){
-    statusEl.textContent='Save failed — check connection.';statusEl.style.color='rgba(220,120,120,.8)';
+    statusEl.textContent='Save failed: '+e.message;statusEl.style.color='rgba(220,120,120,.8)';
   }
 });
 document.getElementById('sp-update').addEventListener('click',async()=>{
@@ -576,7 +580,7 @@ document.getElementById('sp-update').addEventListener('click',async()=>{
     statusEl.textContent='Updated!';statusEl.style.color='rgba(140,220,140,.8)';
     setTimeout(closeSavePopup,700);
   }catch(e){
-    statusEl.textContent='Update failed — check connection.';statusEl.style.color='rgba(220,120,120,.8)';
+    statusEl.textContent='Update failed: '+e.message;statusEl.style.color='rgba(220,120,120,.8)';
   }
 });
 
@@ -602,7 +606,7 @@ async function openLoadPopup(){
       delBtn.addEventListener('click',async e=>{
         e.stopPropagation();
         if(!confirm(`Delete "${song.name}"? This can't be undone.`)) return;
-        try{await deleteSong(song.id);item.remove();}catch(err){alert('Delete failed — check connection.');}
+        try{await deleteSong(song.id);item.remove();}catch(err){alert('Delete failed: '+err.message);}
       });
       item.appendChild(info);item.appendChild(delBtn);
       item.addEventListener('click',async()=>{
@@ -610,12 +614,12 @@ async function openLoadPopup(){
           const full=await fetchSongFull(song.id);
           applyLoadedSong(full);
           closeLoadPopup();
-        }catch(err){alert('Load failed — check connection.');}
+        }catch(err){alert('Load failed: '+err.message);}
       });
       listEl.appendChild(item);
     });
   }catch(e){
-    listEl.innerHTML='<div id="lp-empty">Could not reach Supabase — check connection.</div>';
+    listEl.innerHTML='<div id="lp-empty">Could not reach Supabase: '+e.message+'</div>';
   }
 }
 function closeLoadPopup(){loadPopup.classList.remove('show');}
