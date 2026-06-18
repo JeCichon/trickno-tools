@@ -40,6 +40,19 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .nav-link:hover{color:var(--gold);border-color:var(--border);}
 
 /* TRACKS */
+#pattern-bar{background:rgba(8,5,18,.95);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:10px;}
+#pattern-chips{display:flex;gap:6px;overflow-x:auto;flex:1;padding-bottom:2px;}
+#pattern-chips::-webkit-scrollbar{height:3px;}
+#pattern-chips::-webkit-scrollbar-thumb{background:rgba(201,169,110,.15);border-radius:2px;}
+.pattern-chip{display:flex;flex-direction:column;align-items:flex-start;padding:6px 12px;border:1px solid rgba(201,169,110,.18);border-radius:4px;cursor:pointer;background:rgba(0,0,0,.3);transition:all .15s;flex-shrink:0;min-width:64px;}
+.pattern-chip:hover{border-color:rgba(201,169,110,.4);background:rgba(201,169,110,.06);}
+.pattern-chip.active{border-color:var(--gold);background:rgba(201,169,110,.14);box-shadow:0 0 10px rgba(201,169,110,.15);}
+.pattern-chip-name{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;color:var(--gold);white-space:nowrap;}
+.pattern-chip-sub{font-size:8px;color:rgba(201,169,110,.4);margin-top:1px;}
+.pattern-rename-input{font-family:'Cinzel',serif;font-size:9px;background:#0d0a1e;border:1px solid var(--gold);color:var(--text);padding:2px 4px;border-radius:2px;width:88px;}
+#add-pattern-btn{flex-shrink:0;}
+#pattern-ctx-menu{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:130px;}
+#pattern-ctx-menu.show{display:block;}
 #tracks-outer{overflow-x:auto;padding-bottom:220px;}
 #tracks-outer::-webkit-scrollbar{height:4px;}
 #tracks-outer::-webkit-scrollbar-thumb{background:rgba(201,169,110,.15);border-radius:2px;}
@@ -258,6 +271,13 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   </div>
   <div id="lp-list">Loading…</div>
 </div>
+
+<div id="pattern-bar">
+  <span class="ctl-lbl">PATTERN</span>
+  <div id="pattern-chips"></div>
+  <button id="add-pattern-btn" class="tb">+ New</button>
+</div>
+<div id="pattern-ctx-menu"></div>
 
 <div id="tracks-outer">
   <div id="tracks-container"></div>
@@ -493,7 +513,7 @@ async function saveSongNew(name){
   const res=await fetch(`${SB_URL}/rest/v1/sequences`,{
     method:'POST',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:stepCount,tracks})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns}})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -503,7 +523,7 @@ async function updateSong(id,name){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?id=eq.${id}`,{
     method:'PATCH',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:stepCount,tracks,updated_at:new Date().toISOString()})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns},updated_at:new Date().toISOString()})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -523,21 +543,18 @@ async function fetchSongFull(id){
 function applyLoadedSong(row){
   pushHistory();
   bpm=row.bpm||120;
-  stepCount=row.step_count||16;
-  setBpm(bpm);
-  document.querySelectorAll('.step-preset').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.steps)===stepCount));
-  tracks=(row.tracks||[]).map(t=>({
-    id:t.id||('tr'+Date.now()+Math.random().toString(36).slice(2,4)),
-    suit:t.suit||null,
-    steps:t.steps||null,
-    stepOctaves:t.stepOctaves||null,
-    stepVelocities:t.stepVelocities||null,
-    octave:t.octave||0,
-    grad:t.grad||null,
-    drumSteps:t.drumSteps||null,
-    muted:t.muted||false,solo:t.solo||false,
-    vol:t.vol??0.8,pan:t.pan??0
-  }));
+  if(Array.isArray(row.tracks)){
+    // Legacy flat-track format from before the channel/pattern split
+    const migrated=migrateFlatTracks(row.tracks,row.step_count||16);
+    channels=migrated.channels;patterns=migrated.patterns;
+  } else if(row.tracks&&row.tracks.channels&&row.tracks.patterns){
+    channels=row.tracks.channels;patterns=row.tracks.patterns;
+  } else {
+    channels=[];patterns=[newPattern('Pattern 1',16,[])];
+  }
+  activePatternIndex=0;
+  document.getElementById('bpm-val').textContent=bpm;
+  syncStepPresetUI();
   currentSongId=row.id;currentSongName=row.name;
   render();saveState();
 }
@@ -804,25 +821,66 @@ function stopPreview(){
 // ════════════════════════════════════════════════════════
 // SEQUENCER STATE
 // ════════════════════════════════════════════════════════
-let stepCount=16,bpm=120,playing=false,schedStep=0,nextNoteTime=0,schedTimer=null,rafHandle=null;
+let bpm=120,playing=false,schedStep=0,nextNoteTime=0,schedTimer=null,rafHandle=null;
 const MAX_TRACKS=16;
 const stepQueue=[];
-let tracks=[];
+// CHANNELS = persistent instrument definitions (suit, gradient, pan, vol, octave, mute/solo).
+// PATTERNS = swappable blocks of note data, one per channel, each pattern with its own step count.
+let channels=[];
+let patterns=[];
+let activePatternIndex=0;
 let activeNotes=[]; // [{n, r, g, b}] currently sounding melody cards w/ effective color (for circle)
 
-function newTrack(suit=null){
+function newChannel(suit=null){
+  return{
+    id:'ch'+Date.now()+Math.random().toString(36).slice(2,4),
+    suit,octave:0,
+    grad:(suit&&suit!=='drums')?defaultGrad(suit):null,
+    muted:false,solo:false,vol:0.8,pan:0,
+    clockDiv:1 // forward-looking: ratio relative to master clock; engine doesn't use this yet
+  };
+}
+function newChannelData(suit,stepCount){
   const isDrum=suit==='drums';
   return{
-    id:'tr'+Date.now()+Math.random().toString(36).slice(2,4),
-    suit,
     steps:isDrum?null:new Array(stepCount).fill(null),
     stepOctaves:isDrum?null:new Array(stepCount).fill(0),
     stepVelocities:isDrum?null:new Array(stepCount).fill(100),
-    octave:0,
-    grad:isDrum?null:defaultGrad(suit||'major'),
-    drumSteps:isDrum?DRUM_SLOTS.map(()=>new Array(stepCount).fill(false)):null,
-    muted:false,solo:false,vol:0.8,pan:0
+    drumSteps:isDrum?DRUM_SLOTS.map(()=>new Array(stepCount).fill(false)):null
   };
+}
+function newPattern(name,stepCount,chs){
+  return{
+    id:'pt'+Date.now()+Math.random().toString(36).slice(2,4),
+    name,stepCount,
+    tempo:null, // forward-looking: null = inherit master tempo curve; set = anchor point
+    channelData:chs.map(ch=>newChannelData(ch.suit,stepCount))
+  };
+}
+// Converts the pre-refactor flat track-array format into {channels, patterns}.
+// Used for migrating old localStorage saves and old Supabase songs.
+function migrateFlatTracks(oldTracks,oldStepCount){
+  const sc=oldStepCount||16;
+  const newChannels=(oldTracks||[]).map(t=>({
+    id:t.id||('ch'+Date.now()+Math.random().toString(36).slice(2,4)),
+    suit:t.suit||null,octave:t.octave||0,grad:t.grad||null,
+    muted:t.muted||false,solo:t.solo||false,vol:t.vol??0.8,pan:t.pan??0,clockDiv:1
+  }));
+  const channelData=(oldTracks||[]).map(t=>{
+    const isDrum=t.suit==='drums';
+    return{
+      steps:isDrum?null:(t.steps||new Array(sc).fill(null)),
+      stepOctaves:isDrum?null:(t.stepOctaves||new Array(sc).fill(0)),
+      stepVelocities:isDrum?null:(t.stepVelocities||new Array(sc).fill(100)),
+      drumSteps:isDrum?(t.drumSteps||DRUM_SLOTS.map(()=>new Array(sc).fill(false))):null
+    };
+  });
+  const pattern={id:'pt'+Date.now(),name:'Pattern 1',stepCount:sc,tempo:null,channelData};
+  return{channels:newChannels,patterns:[pattern]};
+}
+function syncStepPresetUI(){
+  const sc=(patterns[activePatternIndex]&&patterns[activePatternIndex].stepCount)||16;
+  document.querySelectorAll('.step-preset').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.steps)===sc));
 }
 
 // ════════════════════════════════════════════════════════
@@ -832,12 +890,12 @@ let undoStack=[],redoStack=[];
 const MAX_HISTORY=60;
 let pendingGesture=null; // for slider/color-drag gestures (begin...commit)
 
-function snapshotState(){return JSON.stringify({bpm,stepCount,tracks});}
+function snapshotState(){return JSON.stringify({bpm,channels,patterns,activePatternIndex});}
 function restoreSnapshot(json){
   const d=JSON.parse(json);
-  bpm=d.bpm;stepCount=d.stepCount;tracks=d.tracks;
+  bpm=d.bpm;channels=d.channels;patterns=d.patterns;activePatternIndex=d.activePatternIndex||0;
   document.getElementById('bpm-val').textContent=bpm;
-  document.querySelectorAll('.step-preset').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.steps)===stepCount));
+  syncStepPresetUI();
   render();saveState();
 }
 function pushHistory(){
@@ -882,7 +940,7 @@ document.addEventListener('keydown',e=>{
   else if((e.key.toLowerCase()==='z'&&e.shiftKey)||e.key.toLowerCase()==='y'){e.preventDefault();redo();}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeSavePopup();closeLoadPopup();}
+  if(e.key==='Escape'){closeSavePopup();closeLoadPopup();closePatternCtxMenu();}
   if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='sp-name'){
     document.getElementById(currentSongId?'sp-update':'sp-save-new').click();
   }
@@ -896,9 +954,10 @@ let drumClipboard=null;   // [bool,bool,...] per slot for one step
 const ctxMenuEl=document.getElementById('step-ctx-menu');
 
 function openStepCtxMenu(ti,si,e,kind){
-  const track=tracks[ti];
+  const pd=patterns[activePatternIndex].channelData[ti];
+  const sc=patterns[activePatternIndex].stepCount;
   ctxMenuEl.innerHTML='';
-  const hasNote=kind==='melody'?(track.steps[si]!==null&&track.steps[si]!==undefined):track.drumSteps.some(row=>row[si]);
+  const hasNote=kind==='melody'?(pd.steps[si]!==null&&pd.steps[si]!==undefined):pd.drumSteps.some(row=>row[si]);
 
   function addOpt(label,fn,danger){
     const o=document.createElement('div');o.className='ctx-opt'+(danger?' danger':'');o.textContent=label;
@@ -908,38 +967,38 @@ function openStepCtxMenu(ti,si,e,kind){
 
   if(kind==='melody'){
     if(hasNote) addOpt('Copy',()=>{melodyClipboard={
-      n:track.steps[si],
-      oct:(track.stepOctaves&&track.stepOctaves[si])||0,
-      vel:(track.stepVelocities&&track.stepVelocities[si]!==undefined)?track.stepVelocities[si]:100
+      n:pd.steps[si],
+      oct:(pd.stepOctaves&&pd.stepOctaves[si])||0,
+      vel:(pd.stepVelocities&&pd.stepVelocities[si]!==undefined)?pd.stepVelocities[si]:100
     };});
     if(melodyClipboard) addOpt('Paste',()=>{
       pushHistory();
-      track.steps[si]=melodyClipboard.n;
-      if(!track.stepOctaves) track.stepOctaves=new Array(stepCount).fill(0);
-      track.stepOctaves[si]=melodyClipboard.oct;
-      if(!track.stepVelocities) track.stepVelocities=new Array(stepCount).fill(100);
-      track.stepVelocities[si]=melodyClipboard.vel!==undefined?melodyClipboard.vel:100;
+      pd.steps[si]=melodyClipboard.n;
+      if(!pd.stepOctaves) pd.stepOctaves=new Array(sc).fill(0);
+      pd.stepOctaves[si]=melodyClipboard.oct;
+      if(!pd.stepVelocities) pd.stepVelocities=new Array(sc).fill(100);
+      pd.stepVelocities[si]=melodyClipboard.vel!==undefined?melodyClipboard.vel:100;
       render();saveState();
     });
     if(hasNote) addOpt('Clear',()=>{
-      pushHistory();track.steps[si]=null;
-      if(track.stepOctaves) track.stepOctaves[si]=0;
-      if(track.stepVelocities) track.stepVelocities[si]=100;
+      pushHistory();pd.steps[si]=null;
+      if(pd.stepOctaves) pd.stepOctaves[si]=0;
+      if(pd.stepVelocities) pd.stepVelocities[si]=100;
       render();saveState();
     },true);
     if(hasNote){
       const div=document.createElement('div');div.className='ctx-divider';ctxMenuEl.appendChild(div);
       const lbl=document.createElement('div');lbl.className='ctx-oct-lbl';lbl.textContent='OCTAVE';ctxMenuEl.appendChild(lbl);
       const octRow=document.createElement('div');octRow.className='ctx-oct-row';
-      const curOct=(track.stepOctaves&&track.stepOctaves[si])||0;
+      const curOct=(pd.stepOctaves&&pd.stepOctaves[si])||0;
       [-2,-1,0,1,2].forEach(v=>{
         const b=document.createElement('button');
         b.className='ctx-oct-btn'+(v===curOct?' on':'');
         b.textContent=(v>0?'+':'')+v;
         b.addEventListener('click',()=>{
           pushHistory();
-          if(!track.stepOctaves) track.stepOctaves=new Array(stepCount).fill(0);
-          track.stepOctaves[si]=v;
+          if(!pd.stepOctaves) pd.stepOctaves=new Array(sc).fill(0);
+          pd.stepOctaves[si]=v;
           render();saveState();closeStepCtxMenu();
         });
         octRow.appendChild(b);
@@ -950,7 +1009,7 @@ function openStepCtxMenu(ti,si,e,kind){
       const velLblRow=document.createElement('div');velLblRow.className='ctx-vel-lbl-row';
       const velLbl=document.createElement('span');velLbl.className='ctx-oct-lbl';velLbl.textContent='VELOCITY';velLbl.style.padding='0';
       const velNum=document.createElement('span');velNum.className='ctx-vel-num';
-      const curVel=(track.stepVelocities&&track.stepVelocities[si]!==undefined)?track.stepVelocities[si]:100;
+      const curVel=(pd.stepVelocities&&pd.stepVelocities[si]!==undefined)?pd.stepVelocities[si]:100;
       velNum.textContent=curVel;
       velLblRow.appendChild(velLbl);velLblRow.appendChild(velNum);
       ctxMenuEl.appendChild(velLblRow);
@@ -959,8 +1018,8 @@ function openStepCtxMenu(ti,si,e,kind){
       velSlider.value=curVel;velSlider.className='ctx-vel-slider';
       velSlider.addEventListener('input',e=>{
         beginGesture();
-        if(!track.stepVelocities) track.stepVelocities=new Array(stepCount).fill(100);
-        track.stepVelocities[si]=parseInt(e.target.value);
+        if(!pd.stepVelocities) pd.stepVelocities=new Array(sc).fill(100);
+        pd.stepVelocities[si]=parseInt(e.target.value);
         velNum.textContent=e.target.value;
         // live-update badge on the actual cell without closing menu
         saveState();
@@ -974,8 +1033,8 @@ function openStepCtxMenu(ti,si,e,kind){
         b.className='ctx-oct-btn'+(v===curVel?' on':'');b.textContent=v;
         b.addEventListener('click',()=>{
           pushHistory();
-          if(!track.stepVelocities) track.stepVelocities=new Array(stepCount).fill(100);
-          track.stepVelocities[si]=v;
+          if(!pd.stepVelocities) pd.stepVelocities=new Array(sc).fill(100);
+          pd.stepVelocities[si]=v;
           render();saveState();closeStepCtxMenu();
         });
         velPresets.appendChild(b);
@@ -983,15 +1042,15 @@ function openStepCtxMenu(ti,si,e,kind){
       ctxMenuEl.appendChild(velPresets);
     }
   } else {
-    if(hasNote) addOpt('Copy',()=>{drumClipboard=DRUM_SLOTS.map((_,sli)=>track.drumSteps[sli][si]);});
+    if(hasNote) addOpt('Copy',()=>{drumClipboard=DRUM_SLOTS.map((_,sli)=>pd.drumSteps[sli][si]);});
     if(drumClipboard) addOpt('Paste',()=>{
       pushHistory();
-      DRUM_SLOTS.forEach((_,sli)=>{track.drumSteps[sli][si]=drumClipboard[sli];});
+      DRUM_SLOTS.forEach((_,sli)=>{pd.drumSteps[sli][si]=drumClipboard[sli];});
       render();saveState();
     });
     if(hasNote) addOpt('Clear',()=>{
       pushHistory();
-      DRUM_SLOTS.forEach((_,sli)=>{track.drumSteps[sli][si]=false;});
+      DRUM_SLOTS.forEach((_,sli)=>{pd.drumSteps[sli][si]=false;});
       render();saveState();
     },true);
   }
@@ -1029,32 +1088,36 @@ function stopPlay(){
 }
 function scheduler(){
   const a=getCtx();
+  const sc=patterns[activePatternIndex].stepCount;
   while(nextNoteTime<a.currentTime+SCHEDULE_AHEAD_S){
     stepQueue.push({step:schedStep,time:nextNoteTime});
     fireStep(schedStep,nextNoteTime);
     nextNoteTime+=((60/bpm)/4);
-    schedStep=(schedStep+1)%stepCount;
+    schedStep=(schedStep+1)%sc;
   }
   schedTimer=setTimeout(scheduler,LOOKAHEAD_MS);
 }
 function fireStep(step,t){
+  const pat=patterns[activePatternIndex];
   const dur=((60/bpm)/4)*NOTE_FACTOR;
-  const hasSolo=tracks.some(tr=>tr.solo);
-  tracks.forEach(track=>{
-    if(track.muted||!track.suit) return;
-    if(hasSolo&&!track.solo) return;
-    const pan=track.pan||0;
-    if(track.suit==='drums'&&track.drumSteps){
+  const hasSolo=channels.some(ch=>ch.solo);
+  channels.forEach((ch,ci)=>{
+    if(ch.muted||!ch.suit) return;
+    if(hasSolo&&!ch.solo) return;
+    const pan=ch.pan||0;
+    const pd=pat.channelData[ci];
+    if(!pd) return;
+    if(ch.suit==='drums'&&pd.drumSteps){
       DRUM_SLOTS.forEach((_,si)=>{
-        if(track.drumSteps[si][step]) scheduleDrumNote(si,t,track.vol,pan);
+        if(pd.drumSteps[si][step]) scheduleDrumNote(si,t,ch.vol,pan);
       });
-    } else if(track.steps){
-      const n=track.steps[step];
+    } else if(pd.steps){
+      const n=pd.steps[step];
       if(n!==null&&n!==undefined){
-        const octShift=(track.octave||0)+((track.stepOctaves&&track.stepOctaves[step])||0);
-        const vel=(track.stepVelocities&&track.stepVelocities[step]!==undefined)?track.stepVelocities[step]:100;
-        const eff=getEffectiveColor(track,n);
-        scheduleCardNote(n,t,dur,track.vol*(vel/127),octShift,eff,pan);
+        const octShift=(ch.octave||0)+((pd.stepOctaves&&pd.stepOctaves[step])||0);
+        const vel=(pd.stepVelocities&&pd.stepVelocities[step]!==undefined)?pd.stepVelocities[step]:100;
+        const eff=getEffectiveColor(ch,n);
+        scheduleCardNote(n,t,dur,ch.vol*(vel/127),octShift,eff,pan);
       }
     }
   });
@@ -1097,15 +1160,122 @@ function updatePlayhead(step){
 // RENDER
 // ════════════════════════════════════════════════════════
 function render(){
+  renderPatternBar();
   const c=document.getElementById('tracks-container');
   c.innerHTML='';
-  tracks.forEach((t,i)=>c.appendChild(buildTrackRow(t,i)));
+  channels.forEach((ch,ci)=>c.appendChild(buildTrackRow(ch,ci)));
   updateAddTrackButton();
 }
 
-function buildTrackRow(track,ti){
-  const info=track.suit?SUIT_INFO[track.suit]:null;
-  const isDrum=track.suit==='drums';
+// ════════════════════════════════════════════════════════
+// PATTERN MANAGEMENT (new / duplicate / rename / delete / switch)
+// ════════════════════════════════════════════════════════
+function switchPattern(idx){
+  if(idx===activePatternIndex) return;
+  if(playing) stopPlay();
+  activePatternIndex=idx;
+  schedStep=0;
+  syncStepPresetUI();
+  render();saveState();
+}
+function addPattern(){
+  if(playing) stopPlay();
+  pushHistory();
+  const newPat=newPattern(`Pattern ${patterns.length+1}`,patterns[activePatternIndex].stepCount,channels);
+  patterns.push(newPat);
+  activePatternIndex=patterns.length-1;
+  schedStep=0;
+  syncStepPresetUI();
+  render();saveState();
+}
+function duplicatePattern(idx){
+  if(playing) stopPlay();
+  pushHistory();
+  const clone=JSON.parse(JSON.stringify(patterns[idx]));
+  clone.id='pt'+Date.now()+Math.random().toString(36).slice(2,4);
+  clone.name=patterns[idx].name+' copy';
+  patterns.splice(idx+1,0,clone);
+  activePatternIndex=idx+1;
+  schedStep=0;
+  syncStepPresetUI();
+  render();saveState();
+}
+function deletePattern(idx){
+  if(patterns.length<=1){alert('A song needs at least one pattern.');return;}
+  if(!confirm(`Delete "${patterns[idx].name}"? This can't be undone.`)) return;
+  if(playing) stopPlay();
+  pushHistory();
+  patterns.splice(idx,1);
+  if(activePatternIndex>=patterns.length) activePatternIndex=patterns.length-1;
+  else if(activePatternIndex>idx) activePatternIndex--;
+  schedStep=0;
+  syncStepPresetUI();
+  render();saveState();
+}
+function startRenamePattern(idx,nameEl){
+  const pat=patterns[idx];
+  const input=document.createElement('input');
+  input.type='text';input.className='pattern-rename-input';
+  input.value=pat.name;input.maxLength=40;
+  nameEl.replaceWith(input);
+  input.focus();input.select();
+  let done=false;
+  function commit(){
+    if(done) return; done=true;
+    const v=input.value.trim();
+    if(v&&v!==pat.name){pushHistory();pat.name=v;saveState();}
+    render();
+  }
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();commit();}
+    if(e.key==='Escape'){e.preventDefault();done=true;render();}
+  });
+}
+function renderPatternBar(){
+  const container=document.getElementById('pattern-chips');
+  container.innerHTML='';
+  patterns.forEach((pat,idx)=>{
+    const chip=document.createElement('div');
+    chip.className='pattern-chip'+(idx===activePatternIndex?' active':'');
+    const nameEl=document.createElement('span');nameEl.className='pattern-chip-name';nameEl.textContent=pat.name;
+    const subEl=document.createElement('span');subEl.className='pattern-chip-sub';subEl.textContent=pat.stepCount+' steps';
+    chip.appendChild(nameEl);chip.appendChild(subEl);
+    chip.addEventListener('click',()=>switchPattern(idx));
+    chip.addEventListener('dblclick',e=>{e.stopPropagation();e.preventDefault();startRenamePattern(idx,nameEl);});
+    chip.addEventListener('contextmenu',e=>{e.preventDefault();openPatternCtxMenu(idx,e);});
+    container.appendChild(chip);
+  });
+}
+const patternCtxMenuEl=document.getElementById('pattern-ctx-menu');
+function openPatternCtxMenu(idx,e){
+  patternCtxMenuEl.innerHTML='';
+  function addOpt(label,fn,danger){
+    const o=document.createElement('div');o.className='ctx-opt'+(danger?' danger':'');o.textContent=label;
+    o.addEventListener('click',()=>{fn();closePatternCtxMenu();});
+    patternCtxMenuEl.appendChild(o);
+  }
+  addOpt('Rename',()=>{
+    const chipEls=document.querySelectorAll('.pattern-chip');
+    const nameEl=chipEls[idx]&&chipEls[idx].querySelector('.pattern-chip-name');
+    if(nameEl) startRenamePattern(idx,nameEl);
+  });
+  addOpt('Duplicate',()=>duplicatePattern(idx));
+  if(patterns.length>1) addOpt('Delete',()=>deletePattern(idx),true);
+  const x=Math.min(e.clientX,window.innerWidth-160);
+  const y=Math.min(e.clientY+4,window.innerHeight-140);
+  patternCtxMenuEl.style.left=x+'px';patternCtxMenuEl.style.top=y+'px';
+  patternCtxMenuEl.classList.add('show');
+}
+function closePatternCtxMenu(){patternCtxMenuEl.classList.remove('show');}
+document.addEventListener('mousedown',e=>{
+  if(patternCtxMenuEl.classList.contains('show')&&!patternCtxMenuEl.contains(e.target)) closePatternCtxMenu();
+});
+document.getElementById('add-pattern-btn').addEventListener('click',addPattern);
+
+function buildTrackRow(channel,ci){
+  const info=channel.suit?SUIT_INFO[channel.suit]:null;
+  const isDrum=channel.suit==='drums';
   const row=document.createElement('div');row.className='track-row';
 
   // Header
@@ -1114,87 +1284,100 @@ function buildTrackRow(track,ti){
   const inf=document.createElement('div');inf.className='track-info';
   if(info){
     const sb=document.createElement('button');sb.className='track-suit-btn';sb.textContent=info.label;
-    sb.style.color=info.color;sb.addEventListener('click',e=>openInstPicker(ti,e));inf.appendChild(sb);
+    sb.style.color=info.color;sb.addEventListener('click',e=>openInstPicker(ci,e));inf.appendChild(sb);
   } else {
     const ul=document.createElement('span');ul.className='track-unassigned';ul.textContent='Click to assign';
-    ul.addEventListener('click',e=>openInstPicker(ti,e));inf.appendChild(ul);
+    ul.addEventListener('click',e=>openInstPicker(ci,e));inf.appendChild(ul);
   }
   const vol=document.createElement('input');vol.type='range';vol.className='track-vol';
-  vol.min=0;vol.max=1;vol.step=0.05;vol.value=track.vol;
-  vol.addEventListener('input',e=>{beginGesture();track.vol=parseFloat(e.target.value);});
+  vol.min=0;vol.max=1;vol.step=0.05;vol.value=channel.vol;
+  vol.addEventListener('input',e=>{beginGesture();channel.vol=parseFloat(e.target.value);});
   vol.addEventListener('change',commitGesture);
   inf.appendChild(vol);
-  if(track.suit){
+  if(channel.suit){
     const panRow=document.createElement('div');panRow.className='pan-row';
     const panLbl=document.createElement('span');panLbl.className='oct-lbl';panLbl.textContent='PAN';
     const panSlider=document.createElement('input');panSlider.type='range';panSlider.className='pan-slider';
-    panSlider.min=-1;panSlider.max=1;panSlider.step=0.1;panSlider.value=track.pan||0;
-    const panVal=document.createElement('span');panVal.className='pan-val';panVal.textContent=panLabel(track.pan||0);
-    panSlider.addEventListener('input',e=>{beginGesture();track.pan=parseFloat(e.target.value);panVal.textContent=panLabel(track.pan);});
+    panSlider.min=-1;panSlider.max=1;panSlider.step=0.1;panSlider.value=channel.pan||0;
+    const panVal=document.createElement('span');panVal.className='pan-val';panVal.textContent=panLabel(channel.pan||0);
+    panSlider.addEventListener('input',e=>{beginGesture();channel.pan=parseFloat(e.target.value);panVal.textContent=panLabel(channel.pan);});
     panSlider.addEventListener('change',commitGesture);
     panRow.appendChild(panLbl);panRow.appendChild(panSlider);panRow.appendChild(panVal);
     inf.appendChild(panRow);
   }
-  if(!isDrum&&track.suit){
+  if(!isDrum&&channel.suit){
     const octRow=document.createElement('div');octRow.className='oct-row';
     const octLbl=document.createElement('span');octLbl.className='oct-lbl';octLbl.textContent='OCT';
     const octDn=document.createElement('button');octDn.className='oct-btn';octDn.textContent='−';
     const octVal=document.createElement('span');octVal.className='oct-val';
-    octVal.textContent=(track.octave>0?'+':'')+track.octave;
+    octVal.textContent=(channel.octave>0?'+':'')+channel.octave;
     const octUp=document.createElement('button');octUp.className='oct-btn';octUp.textContent='+';
-    octDn.addEventListener('click',()=>{pushHistory();track.octave=Math.max(-2,(track.octave||0)-1);octVal.textContent=(track.octave>0?'+':'')+track.octave;saveState();});
-    octUp.addEventListener('click',()=>{pushHistory();track.octave=Math.min(2,(track.octave||0)+1);octVal.textContent=(track.octave>0?'+':'')+track.octave;saveState();});
+    octDn.addEventListener('click',()=>{pushHistory();channel.octave=Math.max(-2,(channel.octave||0)-1);octVal.textContent=(channel.octave>0?'+':'')+channel.octave;saveState();});
+    octUp.addEventListener('click',()=>{pushHistory();channel.octave=Math.min(2,(channel.octave||0)+1);octVal.textContent=(channel.octave>0?'+':'')+channel.octave;saveState();});
     octRow.appendChild(octLbl);octRow.appendChild(octDn);octRow.appendChild(octVal);octRow.appendChild(octUp);
 
     const gradBtn=document.createElement('button');
-    gradBtn.className='grad-btn'+(track.grad&&track.grad.on?' on':'');
+    gradBtn.className='grad-btn'+(channel.grad&&channel.grad.on?' on':'');
     gradBtn.title='Gradient';
-    if(track.grad) gradBtn.style.background=`linear-gradient(to right, ${track.grad.start}, ${track.grad.end})`;
-    gradBtn.addEventListener('click',e=>{e.stopPropagation();openGradPopup(ti,e);});
+    if(channel.grad) gradBtn.style.background=`linear-gradient(to right, ${channel.grad.start}, ${channel.grad.end})`;
+    gradBtn.addEventListener('click',e=>{e.stopPropagation();openGradPopup(ci,e);});
     octRow.appendChild(gradBtn);
 
     inf.appendChild(octRow);
   }
   const btns=document.createElement('div');btns.className='track-mini-btns';
-  const mb=document.createElement('button');mb.className='tmb'+(track.muted?' muted':'');mb.textContent='M';
-  mb.title='Mute';mb.addEventListener('click',()=>{pushHistory();track.muted=!track.muted;render();saveState();});
-  const solb=document.createElement('button');solb.className='tmb solo'+(track.solo?' on':'');solb.textContent='S';
-  solb.title='Solo';solb.addEventListener('click',()=>{pushHistory();track.solo=!track.solo;render();saveState();});
+  const mb=document.createElement('button');mb.className='tmb'+(channel.muted?' muted':'');mb.textContent='M';
+  mb.title='Mute';mb.addEventListener('click',()=>{pushHistory();channel.muted=!channel.muted;render();saveState();});
+  const solb=document.createElement('button');solb.className='tmb solo'+(channel.solo?' on':'');solb.textContent='S';
+  solb.title='Solo';solb.addEventListener('click',()=>{pushHistory();channel.solo=!channel.solo;render();saveState();});
   const upb=document.createElement('button');upb.className='tmb dup';upb.textContent='⧉';upb.title='Duplicate track';
   upb.addEventListener('click',()=>{
     pushHistory();
-    const clone=JSON.parse(JSON.stringify(track));
-    clone.id='tr'+Date.now()+Math.random().toString(36).slice(2,4);
-    tracks.splice(ti+1,0,clone);
+    const cloneCh=JSON.parse(JSON.stringify(channel));
+    cloneCh.id='ch'+Date.now()+Math.random().toString(36).slice(2,4);
+    channels.splice(ci+1,0,cloneCh);
+    patterns.forEach(pat=>{
+      const clonedData=JSON.parse(JSON.stringify(pat.channelData[ci]));
+      pat.channelData.splice(ci+1,0,clonedData);
+    });
     render();saveState();
   });
   const db=document.createElement('button');db.className='tmb del';db.textContent='✕';db.title='Remove track';
-  db.addEventListener('click',()=>{if(confirm('Remove track?')){pushHistory();tracks.splice(ti,1);render();saveState();}});
+  db.addEventListener('click',()=>{
+    if(confirm('Remove track?')){
+      pushHistory();
+      channels.splice(ci,1);
+      patterns.forEach(pat=>{pat.channelData.splice(ci,1);});
+      render();saveState();
+    }
+  });
   btns.appendChild(mb);btns.appendChild(solb);btns.appendChild(upb);btns.appendChild(db);
   hdr.appendChild(pip);hdr.appendChild(inf);hdr.appendChild(btns);
   row.appendChild(hdr);
 
   // Steps
   const grid=document.createElement('div');grid.className='steps-grid';
-  for(let si=0;si<stepCount;si++){
+  const sc=patterns[activePatternIndex].stepCount;
+  for(let si=0;si<sc;si++){
     if(si>0&&si%4===0){const gap=document.createElement('div');gap.className='beat-gap';grid.appendChild(gap);}
-    grid.appendChild(isDrum?buildDrumCell(track,ti,si):buildMelodyCell(track,ti,si));
+    grid.appendChild(isDrum?buildDrumCell(channel,ci,si):buildMelodyCell(channel,ci,si));
   }
   row.appendChild(grid);
   return row;
 }
 
-function buildMelodyCell(track,ti,si){
+function buildMelodyCell(channel,ci,si){
   const el=document.createElement('div');
   el.className='step-cell'+(si%4===0?' beat1':'');
   el.dataset.step=si;
   const numEl=document.createElement('span');numEl.className='cell-num'+(si%4===0?' b':'');numEl.textContent=si+1;el.appendChild(numEl);
   const plus=document.createElement('div');plus.className='cell-plus';plus.textContent='+';el.appendChild(plus);
-  const n=track.steps[si];
+  const pd=patterns[activePatternIndex].channelData[ci];
+  const n=pd.steps[si];
   if(n!==null&&n!==undefined){
     const card=BASE_CARDS.find(c=>c.n===n);
     if(card){
-      const col=getEffectiveColor(track,n);
+      const col=getEffectiveColor(channel,n);
       const fg=`rgb(${255-col.r},${255-col.g},${255-col.b})`;
       el.style.background=`rgb(${col.r},${col.g},${col.b})`;
       el.style.color=fg;el.style.boxShadow=`0 2px 10px rgba(${col.r},${col.g},${col.b},.3)`;
@@ -1204,65 +1387,66 @@ function buildMelodyCell(track,ti,si){
       const wd=document.createElement('div');wd.className='cell-words';wd.style.color=fg;wd.textContent=`${card.adj}·${card.noun}`;
       el.appendChild(nm);el.appendChild(wd);
 
-      const so=(track.stepOctaves&&track.stepOctaves[si])||0;
+      const so=(pd.stepOctaves&&pd.stepOctaves[si])||0;
       if(so!==0){
         const badge=document.createElement('span');badge.className='cell-oct';
         badge.style.color=fg;badge.textContent=(so>0?'+':'')+so;
         badge.title='Click to reset octave';
         badge.addEventListener('click',e=>{
           e.stopPropagation();pushHistory();
-          track.stepOctaves[si]=0;render();saveState();
+          pd.stepOctaves[si]=0;render();saveState();
         });
         el.appendChild(badge);
       }
-      const vl=(track.stepVelocities&&track.stepVelocities[si]!==undefined)?track.stepVelocities[si]:100;
+      const vl=(pd.stepVelocities&&pd.stepVelocities[si]!==undefined)?pd.stepVelocities[si]:100;
       if(vl!==100){
         const velBadge=document.createElement('span');velBadge.className='cell-vel';
         velBadge.style.color=fg;velBadge.textContent='v'+vl;
         velBadge.title='Click to reset velocity to 100';
         velBadge.addEventListener('click',e=>{
           e.stopPropagation();pushHistory();
-          track.stepVelocities[si]=100;render();saveState();
+          pd.stepVelocities[si]=100;render();saveState();
         });
         el.appendChild(velBadge);
       }
     }
   }
-  el.addEventListener('click',()=>{if(!track.suit){openInstPicker(ti,{clientX:100,clientY:200});return;}openCardPicker(ti,si);});
-  el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ti,si,e,'melody');});
+  el.addEventListener('click',()=>{if(!channel.suit){openInstPicker(ci,{clientX:100,clientY:200});return;}openCardPicker(ci,si);});
+  el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ci,si,e,'melody');});
   return el;
 }
 
-function buildDrumCell(track,ti,si){
+function buildDrumCell(channel,ci,si){
   const el=document.createElement('div');
   el.className='drum-cell'+(si%4===0?' beat1':'');
   el.dataset.step=si;
   const numEl=document.createElement('span');numEl.className='drum-cell-num'+(si%4===0?' b':'');numEl.textContent=si+1;el.appendChild(numEl);
   const grid=document.createElement('div');grid.className='drum-grid';
+  const pd=patterns[activePatternIndex].channelData[ci];
   DRUM_SLOTS.forEach((slot,sli)=>{
-    const active=track.drumSteps[sli][si];
+    const active=pd.drumSteps[sli][si];
     const btn=document.createElement('button');btn.className='drum-btn'+(active?' on':'');
     btn.textContent=slot.label;btn.title=slot.title;
     if(active) btn.style.setProperty('--dc',slot.color);
     btn.addEventListener('click',e=>{
       e.stopPropagation();
       pushHistory();
-      track.drumSteps[sli][si]=!track.drumSteps[sli][si];
+      pd.drumSteps[sli][si]=!pd.drumSteps[sli][si];
       btn.classList.toggle('on');
-      if(track.drumSteps[sli][si]) btn.style.setProperty('--dc',slot.color);
+      if(pd.drumSteps[sli][si]) btn.style.setProperty('--dc',slot.color);
       // Immediate audio preview
-      if(track.drumSteps[sli][si]){const a=getCtx();scheduleDrumNote(sli,a.currentTime,track.vol,track.pan||0);}
+      if(pd.drumSteps[sli][si]){const a=getCtx();scheduleDrumNote(sli,a.currentTime,channel.vol,channel.pan||0);}
       // Update hasAny class on cell
-      const hasAny=track.drumSteps.some(row=>row[si]);
+      const hasAny=pd.drumSteps.some(row=>row[si]);
       el.classList.toggle('filled',hasAny);
       saveState();
     });
     grid.appendChild(btn);
   });
-  const hasAny=track.drumSteps.some(row=>row[si]);
+  const hasAny=pd.drumSteps.some(row=>row[si]);
   if(hasAny) el.classList.add('filled');
   el.appendChild(grid);
-  el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ti,si,e,'drum');});
+  el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ci,si,e,'drum');});
   return el;
 }
 
@@ -1282,28 +1466,19 @@ instPicker.querySelectorAll('.inst-opt').forEach(opt=>{
     if(instPickerTi===null) return;
     pushHistory();
     const suit=opt.dataset.suit;
-    const wasDrum=tracks[instPickerTi].suit==='drums';
+    const ci=instPickerTi;
+    const wasDrum=channels[ci].suit==='drums';
     const isDrum=suit==='drums';
-    tracks[instPickerTi].suit=suit;
+    channels[ci].suit=suit;
     if(isDrum&&!wasDrum){
-      tracks[instPickerTi].steps=null;
-      tracks[instPickerTi].stepOctaves=null;
-      tracks[instPickerTi].stepVelocities=null;
-      tracks[instPickerTi].grad=null;
-      tracks[instPickerTi].drumSteps=DRUM_SLOTS.map(()=>new Array(stepCount).fill(false));
+      channels[ci].grad=null;
+      patterns.forEach(pat=>{pat.channelData[ci]=newChannelData('drums',pat.stepCount);});
     } else if(!isDrum&&wasDrum){
-      tracks[instPickerTi].steps=new Array(stepCount).fill(null);
-      tracks[instPickerTi].stepOctaves=new Array(stepCount).fill(0);
-      tracks[instPickerTi].stepVelocities=new Array(stepCount).fill(100);
-      tracks[instPickerTi].grad=defaultGrad(suit);
-      tracks[instPickerTi].drumSteps=null;
-    } else if(!isDrum&&!tracks[instPickerTi].grad){
-      tracks[instPickerTi].grad=defaultGrad(suit);
-      if(!tracks[instPickerTi].stepVelocities) tracks[instPickerTi].stepVelocities=new Array(stepCount).fill(100);
+      channels[ci].grad=defaultGrad(suit);
+      patterns.forEach(pat=>{pat.channelData[ci]=newChannelData(suit,pat.stepCount);});
     } else if(!isDrum){
-      // suit changed between melody suits — refresh gradient defaults for new suit but keep on/off+settings shape
-      tracks[instPickerTi].grad=defaultGrad(suit);
-      if(!tracks[instPickerTi].stepVelocities) tracks[instPickerTi].stepVelocities=new Array(stepCount).fill(100);
+      // suit changed between melody suits — refresh gradient defaults but keep existing note data
+      channels[ci].grad=defaultGrad(suit);
     }
     instPicker.classList.remove('show');render();saveState();instPickerTi=null;
   });
@@ -1318,10 +1493,10 @@ let gradTi=null;
 
 function openGradPopup(ti,e){
   gradTi=ti;
-  const track=tracks[ti];
-  if(!track.grad) track.grad=defaultGrad(track.suit);
-  const g=track.grad;
-  const info=SUIT_INFO[track.suit];
+  const channel=channels[ti];
+  if(!channel.grad) channel.grad=defaultGrad(channel.suit);
+  const g=channel.grad;
+  const info=SUIT_INFO[channel.suit];
 
   document.getElementById('gp-title').textContent=`${info.label.toUpperCase()} GRADIENT`;
   document.getElementById('gp-toggle').classList.toggle('on',g.on);
@@ -1342,7 +1517,7 @@ function closeGradPopup(){gradPopup.classList.remove('show');gradTi=null;}
 document.getElementById('gp-toggle').addEventListener('click',()=>{
   if(gradTi===null) return;
   pushHistory();
-  const g=tracks[gradTi].grad;
+  const g=channels[gradTi].grad;
   g.on=!g.on;
   document.getElementById('gp-toggle').classList.toggle('on',g.on);
   render();saveState();
@@ -1350,23 +1525,23 @@ document.getElementById('gp-toggle').addEventListener('click',()=>{
 document.getElementById('gp-start').addEventListener('input',e=>{
   if(gradTi===null) return;
   beginGesture();
-  tracks[gradTi].grad.start=e.target.value;
-  document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${tracks[gradTi].grad.start}, ${tracks[gradTi].grad.end})`;
+  channels[gradTi].grad.start=e.target.value;
+  document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${channels[gradTi].grad.start}, ${channels[gradTi].grad.end})`;
   render();saveState();
 });
 document.getElementById('gp-start').addEventListener('change',commitGesture);
 document.getElementById('gp-end').addEventListener('input',e=>{
   if(gradTi===null) return;
   beginGesture();
-  tracks[gradTi].grad.end=e.target.value;
-  document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${tracks[gradTi].grad.start}, ${tracks[gradTi].grad.end})`;
+  channels[gradTi].grad.end=e.target.value;
+  document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${channels[gradTi].grad.start}, ${channels[gradTi].grad.end})`;
   render();saveState();
 });
 document.getElementById('gp-end').addEventListener('change',commitGesture);
 document.getElementById('gp-swap').addEventListener('click',()=>{
   if(gradTi===null) return;
   pushHistory();
-  const g=tracks[gradTi].grad;
+  const g=channels[gradTi].grad;
   [g.start,g.end]=[g.end,g.start];
   document.getElementById('gp-start').value=g.start;
   document.getElementById('gp-end').value=g.end;
@@ -1376,13 +1551,13 @@ document.getElementById('gp-swap').addEventListener('click',()=>{
 document.getElementById('gp-blend').addEventListener('change',e=>{
   if(gradTi===null) return;
   pushHistory();
-  tracks[gradTi].grad.blend=e.target.value;
+  channels[gradTi].grad.blend=e.target.value;
   render();saveState();
 });
 document.getElementById('gp-opacity').addEventListener('input',e=>{
   if(gradTi===null) return;
   beginGesture();
-  tracks[gradTi].grad.opacity=parseInt(e.target.value);
+  channels[gradTi].grad.opacity=parseInt(e.target.value);
   document.getElementById('gp-opacity-val').textContent=e.target.value+'%';
   render();saveState();
 });
@@ -1399,16 +1574,17 @@ let pickerTi=null,pickerSi=null;
 
 function openCardPicker(ti,si){
   pickerTi=ti;pickerSi=si;
-  const track=tracks[ti];const info=SUIT_INFO[track.suit];
+  const channel=channels[ti];const info=SUIT_INFO[channel.suit];
+  const pd=patterns[activePatternIndex].channelData[ti];
   document.getElementById('cp-suit-lbl').textContent=`${info.pip} ${info.label}`;
   document.getElementById('cp-suit-lbl').style.color=info.color;
   document.getElementById('cp-step-lbl').textContent=`Step ${si+1}`;
   const clearBtn=document.getElementById('cp-clear');
-  clearBtn.style.display=(track.steps[si]!==null&&track.steps[si]!==undefined)?'block':'none';
+  clearBtn.style.display=(pd.steps[si]!==null&&pd.steps[si]!==undefined)?'block':'none';
   const cpCards=document.getElementById('cp-cards');cpCards.innerHTML='';
-  const currentN=track.steps[si];
-  BASE_CARDS.filter(c=>c.suit===track.suit).forEach(card=>{
-    const col=getEffectiveColor(track,card.n);
+  const currentN=pd.steps[si];
+  BASE_CARDS.filter(c=>c.suit===channel.suit).forEach(card=>{
+    const col=getEffectiveColor(channel,card.n);
     const fg=`rgb(${255-col.r},${255-col.g},${255-col.b})`;
     const chip=document.createElement('div');
     chip.className='cp-card'+(card.n===currentN?' sel':'');
@@ -1421,7 +1597,7 @@ function openCardPicker(ti,si){
     chip.addEventListener('mouseleave',()=>stopPreview());
     chip.addEventListener('click',()=>{
       pushHistory();
-      tracks[pickerTi].steps[pickerSi]=card.n;
+      pd.steps[pickerSi]=card.n;
       closeCardPicker();render();saveState();
       previewCard(card.n,col);setTimeout(stopPreview,300);
     });
@@ -1434,7 +1610,7 @@ function openCardPicker(ti,si){
 function closeCardPicker(){stopPreview();cpEl.classList.remove('show');pickerTi=null;pickerSi=null;}
 document.getElementById('cp-close').addEventListener('click',closeCardPicker);
 document.getElementById('cp-clear').addEventListener('click',()=>{
-  if(pickerTi!==null&&pickerSi!==null){pushHistory();tracks[pickerTi].steps[pickerSi]=null;closeCardPicker();render();saveState();}
+  if(pickerTi!==null&&pickerSi!==null){pushHistory();patterns[activePatternIndex].channelData[pickerTi].steps[pickerSi]=null;closeCardPicker();render();saveState();}
 });
 
 // ════════════════════════════════════════════════════════
@@ -1694,25 +1870,31 @@ document.getElementById('bpm-up').addEventListener('click',()=>setBpm(bpm+5));
 document.querySelectorAll('.step-preset').forEach(btn=>{
   btn.addEventListener('click',()=>{
     pushHistory();
-    stepCount=parseInt(btn.dataset.steps);
-    tracks.forEach(t=>{
-      if(t.steps){while(t.steps.length<stepCount)t.steps.push(null);t.steps=t.steps.slice(0,stepCount);}
-      if(t.stepOctaves){while(t.stepOctaves.length<stepCount)t.stepOctaves.push(0);t.stepOctaves=t.stepOctaves.slice(0,stepCount);}
-      if(t.stepVelocities){while(t.stepVelocities.length<stepCount)t.stepVelocities.push(100);t.stepVelocities=t.stepVelocities.slice(0,stepCount);}
-      if(t.drumSteps){t.drumSteps=t.drumSteps.map(row=>{while(row.length<stepCount)row.push(false);return row.slice(0,stepCount);});}
+    const newCount=parseInt(btn.dataset.steps);
+    const pat=patterns[activePatternIndex];
+    pat.stepCount=newCount;
+    pat.channelData.forEach(pd=>{
+      if(pd.steps){while(pd.steps.length<newCount)pd.steps.push(null);pd.steps=pd.steps.slice(0,newCount);}
+      if(pd.stepOctaves){while(pd.stepOctaves.length<newCount)pd.stepOctaves.push(0);pd.stepOctaves=pd.stepOctaves.slice(0,newCount);}
+      if(pd.stepVelocities){while(pd.stepVelocities.length<newCount)pd.stepVelocities.push(100);pd.stepVelocities=pd.stepVelocities.slice(0,newCount);}
+      if(pd.drumSteps){pd.drumSteps=pd.drumSteps.map(row=>{while(row.length<newCount)row.push(false);return row.slice(0,newCount);});}
     });
     document.querySelectorAll('.step-preset').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');stopPlay();render();saveState();
   });
 });
 document.getElementById('add-track-row').addEventListener('click',()=>{
-  if(tracks.length>=MAX_TRACKS) return;
-  pushHistory();tracks.push(newTrack());render();saveState();
+  if(channels.length>=MAX_TRACKS) return;
+  pushHistory();
+  const ch=newChannel(null);
+  channels.push(ch);
+  patterns.forEach(pat=>{pat.channelData.push(newChannelData(null,pat.stepCount));});
+  render();saveState();
 });
 function updateAddTrackButton(){
   const btn=document.getElementById('add-track-row');
-  if(tracks.length>=MAX_TRACKS){
-    btn.textContent=`Track limit reached (${tracks.length}/${MAX_TRACKS})`;
+  if(channels.length>=MAX_TRACKS){
+    btn.textContent=`Track limit reached (${channels.length}/${MAX_TRACKS})`;
     btn.title='Remove a track to add a new one';
     btn.style.opacity='.35';btn.style.cursor='default';
   } else {
@@ -1725,32 +1907,33 @@ function updateAddTrackButton(){
 // ════════════════════════════════════════════════════════
 // SAVE / LOAD
 // ════════════════════════════════════════════════════════
-const SAVE_KEY='trico_seq_v6';
+const SAVE_KEY='trico_seq_v7';
 function saveState(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,stepCount,tracks:tracks.map(t=>({
-    id:t.id,suit:t.suit,steps:t.steps,stepOctaves:t.stepOctaves,stepVelocities:t.stepVelocities,octave:t.octave,grad:t.grad,drumSteps:t.drumSteps,muted:t.muted,solo:t.solo,vol:t.vol,pan:t.pan
-  }))
-  }));}catch(e){}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,channels,patterns,activePatternIndex}));}catch(e){}
 }
 function loadState(){
   try{
-    const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('trico_seq_v5')||localStorage.getItem('trico_seq_v4')||localStorage.getItem('trico_seq_v3')||localStorage.getItem('trico_seq_v2')||localStorage.getItem('trico_seq_v1');
-    if(!raw) return false;
-    const d=JSON.parse(raw);
-    bpm=d.bpm||120;stepCount=d.stepCount||16;
-    setBpm(bpm);
-    document.querySelectorAll('.step-preset').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.steps)===stepCount));
-    tracks=(d.tracks||[]).map(t=>{
-      const isDrum=t.suit==='drums';
-      const steps=isDrum?null:(t.steps||[]).slice(0,stepCount).concat(new Array(Math.max(0,stepCount-(t.steps||[]).length)).fill(null));
-      const stepOctaves=isDrum?null:(t.stepOctaves||[]).slice(0,stepCount).concat(new Array(Math.max(0,stepCount-(t.stepOctaves||[]).length)).fill(0));
-      const stepVelocities=isDrum?null:(t.stepVelocities||[]).slice(0,stepCount).concat(new Array(Math.max(0,stepCount-(t.stepVelocities||[]).length)).fill(100));
-      const grad=isDrum?null:(t.grad||defaultGrad(t.suit||'major'));
-      const drumSteps=isDrum?(t.drumSteps||DRUM_SLOTS.map(()=>[])).map(row=>{
-        const r=(row||[]).slice(0,stepCount);while(r.length<stepCount)r.push(false);return r;
-      }):null;
-      return{id:t.id,suit:t.suit||null,steps,stepOctaves,stepVelocities,octave:t.octave||0,grad,drumSteps,muted:t.muted||false,solo:t.solo||false,vol:t.vol??0.8,pan:t.pan??0};
-    });
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      bpm=d.bpm||120;
+      channels=d.channels||[];
+      patterns=d.patterns||[];
+      activePatternIndex=d.activePatternIndex||0;
+      if(!patterns.length){channels=[];patterns=[newPattern('Pattern 1',16,[])];activePatternIndex=0;}
+      document.getElementById('bpm-val').textContent=bpm;
+      syncStepPresetUI();
+      return true;
+    }
+    // Legacy formats (pre channel/pattern split)
+    const legacyRaw=localStorage.getItem('trico_seq_v6')||localStorage.getItem('trico_seq_v5')||localStorage.getItem('trico_seq_v4')||localStorage.getItem('trico_seq_v3')||localStorage.getItem('trico_seq_v2')||localStorage.getItem('trico_seq_v1');
+    if(!legacyRaw) return false;
+    const d=JSON.parse(legacyRaw);
+    bpm=d.bpm||120;
+    const migrated=migrateFlatTracks(d.tracks||[],d.stepCount||16);
+    channels=migrated.channels;patterns=migrated.patterns;activePatternIndex=0;
+    document.getElementById('bpm-val').textContent=bpm;
+    syncStepPresetUI();
     return true;
   }catch(e){return false;}
 }
@@ -1761,7 +1944,11 @@ function loadState(){
 async function init(){
   await loadSupabaseCards();
   const had=loadState();
-  if(!had) tracks=[newTrack(),newTrack(),newTrack(),newTrack()];
+  if(!had){
+    channels=[newChannel(),newChannel(),newChannel(),newChannel()];
+    patterns=[newPattern('Pattern 1',16,channels)];
+    activePatternIndex=0;
+  }
   buildCircleLayout();
   render();
 }
