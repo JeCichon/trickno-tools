@@ -79,7 +79,7 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .grad-btn:hover{border-color:var(--gold);}
 .grad-btn.on{border-color:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.25);}
 
-#grad-popup{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:220px;}
+#grad-popup{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:220px;max-height:90vh;overflow-y:auto;}
 #grad-popup.show{display:block;}
 #gp-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 #gp-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.18em;color:var(--gold);flex:1;}
@@ -95,6 +95,46 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .gp-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.15em;color:rgba(201,169,110,.4);}
 #gp-blend{width:100%;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:10px;padding:4px 6px;border-radius:3px;margin-bottom:9px;}
 #gp-opacity-row{display:flex;align-items:center;gap:8px;}
+#gp-sound-section{margin-top:10px;padding-top:10px;border-top:1px solid rgba(201,169,110,.12);max-height:280px;overflow-y:auto;overflow-x:hidden;padding-right:6px;}
+#gp-sound-section::-webkit-scrollbar{width:6px;}
+#gp-sound-section::-webkit-scrollbar-thumb{background:rgba(201,169,110,.2);border-radius:3px;}
+#gp-wheel-row{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:6px;}
+#gp-wheel-wrap{display:flex;justify-content:center;}
+#gp-wheel{border-radius:50%;cursor:crosshair;box-shadow:0 4px 18px rgba(0,0,0,.5);touch-action:none;}
+#gp-sat-wrap{display:flex;flex-direction:column;align-items:center;height:150px;justify-content:space-between;gap:4px;}
+.gp-sat-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.18em;color:rgba(201,169,110,.4);}
+#gp-sat-slider-track{position:relative;width:24px;flex:1;}
+#gp-wheel-sat{position:absolute;width:118px;height:24px;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-90deg);accent-color:var(--gold);cursor:pointer;margin:0;}
+#gp-wheel-sat-val{font-family:'Cinzel',serif;font-size:8px;color:var(--gold);min-width:28px;text-align:center;}
+
+.gp-point{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:3px;border-radius:5px;transition:background .15s;}
+.gp-point:hover{background:rgba(201,169,110,.08);}
+.gp-point-marker{width:7px;height:7px;border-radius:50%;background:rgba(201,169,110,.18);transition:all .15s;}
+.gp-point.active .gp-point-marker{background:var(--gold);box-shadow:0 0 7px rgba(201,169,110,.65);}
+
+.gp-collapse-header{width:100%;text-align:left;background:none;border:none;border-top:1px solid rgba(201,169,110,.12);color:rgba(201,169,110,.55);font-family:'Cinzel',serif;font-size:8px;letter-spacing:.15em;padding:9px 0 5px;margin-top:8px;cursor:pointer;display:flex;align-items:center;gap:7px;}
+.gp-collapse-header:hover{color:var(--gold);}
+.gp-collapse-caret{display:inline-block;transition:transform .15s;font-size:8px;}
+.gp-collapse-header.open .gp-collapse-caret{transform:rotate(90deg);}
+.gp-collapse-body{display:none;}
+.gp-collapse-body.open{display:block;}
+.gp-sub-label{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.18em;color:rgba(201,169,110,.4);margin:9px 0 5px;}
+.gp-sub-label .gp-sub-note{font-family:'EB Garamond',serif;letter-spacing:0;text-transform:none;opacity:.7;font-style:italic;}
+.gp-freq-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.gp-freq-row input[type=number]{width:62px;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:11px;padding:3px 5px;border-radius:3px;}
+.gp-freq-row span{font-size:9px;color:rgba(201,169,110,.5);}
+#gp-freq-slider{width:100%;accent-color:var(--gold);margin-bottom:5px;}
+.gp-mini-caption{font-size:8px;color:rgba(201,169,110,.32);font-style:italic;margin-bottom:4px;line-height:1.45;}
+.gp-rgbhsl-row{display:flex;gap:12px;margin-bottom:6px;}
+.gp-rgbhsl-col{flex:1;}
+.gp-rgbhsl-fields{display:flex;gap:5px;}
+.gp-rgbhsl-fields label{flex:1;display:flex;flex-direction:column;align-items:center;font-family:'Cinzel',serif;font-size:7px;letter-spacing:.1em;color:rgba(201,169,110,.45);gap:2px;}
+.gp-rgbhsl-fields input[type=number]{width:100%;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:11px;padding:3px 2px;border-radius:3px;text-align:center;}
+.gp-rgbhsl-fields input[type=number]:focus{outline:none;border-color:var(--gold);}
+.gp-quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-bottom:4px;}
+.gp-quad-item{display:flex;flex-direction:column;gap:2px;}
+.gp-quad-item label{font-size:7.5px;letter-spacing:.08em;color:rgba(201,169,110,.42);display:flex;justify-content:space-between;}
+.gp-quad-item input[type=range]{width:100%;accent-color:var(--gold);}
 #gp-opacity-row input[type=range]{flex:1;accent-color:var(--gold);}
 #gp-opacity-val{font-family:'Cinzel',serif;font-size:9px;color:var(--gold);min-width:32px;text-align:right;}
 .track-mini-btns{display:flex;flex-direction:column;gap:3px;}
@@ -316,12 +356,54 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
     <span id="gp-title">GRADIENT</span>
     <div class="gp-toggle" id="gp-toggle"><div class="gp-knob"></div></div>
   </div>
+  <div id="gp-wheel-row">
+    <div id="gp-wheel-wrap">
+      <canvas id="gp-wheel" width="150" height="150"></canvas>
+    </div>
+    <div id="gp-sat-wrap">
+      <span class="gp-sat-label">SAT</span>
+      <div id="gp-sat-slider-track">
+        <input type="range" id="gp-wheel-sat" min="0" max="100" value="100"/>
+      </div>
+      <span id="gp-wheel-sat-val">100%</span>
+    </div>
+  </div>
+  <div class="gp-mini-caption">Same map as the Circle visualizer — white center, black edge, hue around. Click or drag to pick.</div>
+
   <div id="gp-row">
-    <input type="color" id="gp-start" value="#c9a96e"/>
+    <div class="gp-point active" id="gp-point-start" data-target="start">
+      <div class="gp-point-marker"></div>
+      <input type="color" id="gp-start" value="#c9a96e"/>
+    </div>
     <div id="gp-preview"></div>
-    <input type="color" id="gp-end" value="#ffffff"/>
+    <div class="gp-point" id="gp-point-end" data-target="end">
+      <div class="gp-point-marker"></div>
+      <input type="color" id="gp-end" value="#ffffff"/>
+    </div>
     <button id="gp-swap" title="Swap colors">⇄</button>
   </div>
+  <div class="gp-mini-caption">Click a dot above a swatch to select it — that's the color the wheel, fields, and sliders below edit.</div>
+  <div class="gp-mini-caption" id="gp-native-caption">Swatches also open your browser's color dialog (handy on Chromium; some Firefox builds block it — use the wheel or fields instead).</div>
+
+  <div class="gp-rgbhsl-row">
+    <div class="gp-rgbhsl-col">
+      <div class="gp-sub-label">RGB</div>
+      <div class="gp-rgbhsl-fields">
+        <label>R<input type="number" id="gp-rgb-r" min="0" max="255" step="1"/></label>
+        <label>G<input type="number" id="gp-rgb-g" min="0" max="255" step="1"/></label>
+        <label>B<input type="number" id="gp-rgb-b" min="0" max="255" step="1"/></label>
+      </div>
+    </div>
+    <div class="gp-rgbhsl-col">
+      <div class="gp-sub-label">HSL</div>
+      <div class="gp-rgbhsl-fields">
+        <label>H<input type="number" id="gp-hsl-h" min="0" max="359" step="1"/></label>
+        <label>S<input type="number" id="gp-hsl-s" min="0" max="100" step="1"/></label>
+        <label>L<input type="number" id="gp-hsl-l" min="0" max="100" step="1"/></label>
+      </div>
+    </div>
+  </div>
+
   <select id="gp-blend">
     <option value="normal">Normal</option>
     <option value="multiply">Multiply</option>
@@ -335,8 +417,39 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   </select>
   <div id="gp-opacity-row">
     <span class="gp-label">OPACITY</span>
-    <input type="range" id="gp-opacity" min="0" max="100" value="30"/>
-    <span id="gp-opacity-val">30%</span>
+    <input type="range" id="gp-opacity" min="0" max="100" value="100"/>
+    <span id="gp-opacity-val">100%</span>
+  </div>
+
+  <div id="gp-sound-section">
+    <div class="gp-sub-label">FREQUENCY</div>
+    <div class="gp-freq-row">
+      <input type="number" id="gp-freq-num" step="0.1" min="170" max="700"/>
+      <span>Hz</span>
+    </div>
+    <input type="range" id="gp-freq-slider" min="170" max="700" value="440" step="0.5"/>
+    <div class="gp-mini-caption">Retunes by rotating this color around the wheel — its brightness and saturation stay the same.</div>
+
+    <button id="gp-advanced-toggle" class="gp-collapse-header">
+      <span class="gp-collapse-caret">▸</span> CMYK &amp; ADSR ENVELOPE
+    </button>
+    <div id="gp-advanced-body" class="gp-collapse-body">
+      <div class="gp-sub-label">CMYK <span class="gp-sub-note">drives the note's envelope</span></div>
+      <div class="gp-quad-grid">
+        <div class="gp-quad-item"><label>CYAN <span id="gp-c-val">0%</span></label><input type="range" id="gp-c" min="0" max="100" value="0"/></div>
+        <div class="gp-quad-item"><label>MAGENTA <span id="gp-m-val">0%</span></label><input type="range" id="gp-m" min="0" max="100" value="0"/></div>
+        <div class="gp-quad-item"><label>YELLOW <span id="gp-y-val">0%</span></label><input type="range" id="gp-y" min="0" max="100" value="0"/></div>
+        <div class="gp-quad-item"><label>BLACK <span id="gp-k-val">0%</span></label><input type="range" id="gp-k" min="0" max="100" value="0"/></div>
+      </div>
+
+      <div class="gp-sub-label">ADSR ENVELOPE</div>
+      <div class="gp-quad-grid">
+        <div class="gp-quad-item"><label>ATTACK <span id="gp-a-val">0ms</span></label><input type="range" id="gp-a" min="4" max="44" value="4"/></div>
+        <div class="gp-quad-item"><label>DECAY <span id="gp-d-val">0ms</span></label><input type="range" id="gp-d" min="20" max="100" value="20"/></div>
+        <div class="gp-quad-item"><label>SUSTAIN <span id="gp-s-val">0%</span></label><input type="range" id="gp-s" min="25" max="65" value="25"/></div>
+        <div class="gp-quad-item"><label>RELEASE <span id="gp-r-val">0ms</span></label><input type="range" id="gp-r" min="30" max="180" value="30"/></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -703,6 +816,34 @@ function toCMYK(r,g,b){
   if(k>=1)return{c:0,m:0,y:0,k:1};
   return{c:(1-rr-k)/(1-k),m:(1-gg-k)/(1-k),y:(1-bb-k)/(1-k),k};
 }
+function cmykToRgb(c,m,y,k){
+  return{
+    r:Math.round(255*(1-c)*(1-k)),
+    g:Math.round(255*(1-m)*(1-k)),
+    b:Math.round(255*(1-y)*(1-k))
+  };
+}
+function rgbToHSLSaturation(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255;
+  const mx=Math.max(rr,gg,bb),mn=Math.min(rr,gg,bb);
+  if(mx===mn) return 0;
+  const l=(mx+mn)/2,d=mx-mn;
+  return l>0.5?d/(2-mx-mn):d/(mx+mn);
+}
+// Best-effort inverse of rgbToFreq: scans hue at full saturation/value and
+// returns whichever hue produces the closest frequency. Not a true bijection
+// (the wheel isn't monotonic in frequency — see the Tricknologic Bridge),
+// so this picks the closest match it finds while sweeping 0°→360°.
+function freqToHue(targetHz){
+  let bestHue=0,bestDiff=Infinity;
+  for(let h=0;h<360;h+=0.25){
+    const c=hslToRgb(h,1,0.5);
+    const f=rgbToFreq(c.r,c.g,c.b);
+    const diff=Math.abs(f-targetHz);
+    if(diff<bestDiff){bestDiff=diff;bestHue=h;}
+  }
+  return bestHue;
+}
 const SUIT_GRAD_DEFAULTS={
   major:{start:'#c9a96e',end:'#ffffff'},
   wands:{start:'#e63946',end:'#ff9900'},
@@ -712,7 +853,7 @@ const SUIT_GRAD_DEFAULTS={
 };
 function defaultGrad(suit){
   const d=SUIT_GRAD_DEFAULTS[suit]||SUIT_GRAD_DEFAULTS.major;
-  return{on:false,start:d.start,end:d.end,blend:'normal',opacity:30};
+  return{on:false,start:d.start,end:d.end,blend:'normal',opacity:100};
 }
 function hexToRgb(hex){
   const m=hex.replace('#','');
@@ -1097,13 +1238,27 @@ function scheduler(){
   }
   schedTimer=setTimeout(scheduler,LOOKAHEAD_MS);
 }
+function isChannelAudible(ch,hasSolo){
+  if(!ch||!ch.suit) return false;
+  if(ch.muted) return false;
+  if(hasSolo&&!ch.solo) return false;
+  return true;
+}
+function getAudibleSuits(){
+  const hasSolo=channels.some(ch=>ch.solo);
+  const suits=new Set();
+  channels.forEach(ch=>{
+    if(ch.suit==='drums') return;
+    if(isChannelAudible(ch,hasSolo)) suits.add(ch.suit);
+  });
+  return suits;
+}
 function fireStep(step,t){
   const pat=patterns[activePatternIndex];
   const dur=((60/bpm)/4)*NOTE_FACTOR;
   const hasSolo=channels.some(ch=>ch.solo);
   channels.forEach((ch,ci)=>{
-    if(ch.muted||!ch.suit) return;
-    if(hasSolo&&!ch.solo) return;
+    if(!isChannelAudible(ch,hasSolo)) return;
     const pan=ch.pan||0;
     const pd=pat.channelData[ci];
     if(!pd) return;
@@ -1133,6 +1288,7 @@ function rafLoop(){
 function updatePlayhead(step){
   document.querySelectorAll('.step-cell.ph,.drum-cell.ph').forEach(el=>el.classList.remove('ph'));
   activeNotes=[];
+  const hasSolo=channels.some(ch=>ch.solo);
   document.querySelectorAll(`[data-step="${step}"]`).forEach(el=>{
     el.classList.add('ph');
     if(el.classList.contains('filled')){
@@ -1141,8 +1297,12 @@ function updatePlayhead(step){
       el.classList.add('flash');
       setTimeout(()=>el.classList.remove('flash'),90);
       if(el.dataset.card_n){
-        const[r,g,b]=col.split(',').map(Number);
-        activeNotes.push({n:parseInt(el.dataset.card_n),r,g,b});
+        const ci=el.dataset.ci!==undefined?parseInt(el.dataset.ci):null;
+        const ch=ci!==null?channels[ci]:null;
+        if(isChannelAudible(ch,hasSolo)){
+          const[r,g,b]=col.split(',').map(Number);
+          activeNotes.push({n:parseInt(el.dataset.card_n),r,g,b});
+        }
       }
     }
     if(el.classList.contains('drum-cell')){
@@ -1370,6 +1530,7 @@ function buildMelodyCell(channel,ci,si){
   const el=document.createElement('div');
   el.className='step-cell'+(si%4===0?' beat1':'');
   el.dataset.step=si;
+  el.dataset.ci=ci;
   const numEl=document.createElement('span');numEl.className='cell-num'+(si%4===0?' b':'');numEl.textContent=si+1;el.appendChild(numEl);
   const plus=document.createElement('div');plus.className='cell-plus';plus.textContent='+';el.appendChild(plus);
   const pd=patterns[activePatternIndex].channelData[ci];
@@ -1507,10 +1668,15 @@ function openGradPopup(ti,e){
   document.getElementById('gp-opacity').value=g.opacity;
   document.getElementById('gp-opacity-val').textContent=g.opacity+'%';
 
-  const x=Math.min(e.clientX,window.innerWidth-240);
-  const y=Math.min(e.clientY+8,window.innerHeight-260);
-  gradPopup.style.left=x+'px';gradPopup.style.top=y+'px';
+  gpSoundTarget='start';
+  document.querySelectorAll('.gp-point').forEach(p=>p.classList.toggle('active',p.dataset.target==='start'));
+
   gradPopup.classList.add('show');
+  const popW=gradPopup.offsetWidth,popH=gradPopup.offsetHeight;
+  const x=Math.max(8,Math.min(e.clientX,window.innerWidth-popW-8));
+  const y=Math.max(8,Math.min(e.clientY+8,window.innerHeight-popH-8));
+  gradPopup.style.left=x+'px';gradPopup.style.top=y+'px';
+  refreshSoundMapping();
 }
 function closeGradPopup(){gradPopup.classList.remove('show');gradTi=null;}
 
@@ -1528,6 +1694,7 @@ document.getElementById('gp-start').addEventListener('input',e=>{
   channels[gradTi].grad.start=e.target.value;
   document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${channels[gradTi].grad.start}, ${channels[gradTi].grad.end})`;
   render();saveState();
+  if(gpSoundTarget==='start') refreshSoundMapping();
 });
 document.getElementById('gp-start').addEventListener('change',commitGesture);
 document.getElementById('gp-end').addEventListener('input',e=>{
@@ -1536,6 +1703,7 @@ document.getElementById('gp-end').addEventListener('input',e=>{
   channels[gradTi].grad.end=e.target.value;
   document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${channels[gradTi].grad.start}, ${channels[gradTi].grad.end})`;
   render();saveState();
+  if(gpSoundTarget==='end') refreshSoundMapping();
 });
 document.getElementById('gp-end').addEventListener('change',commitGesture);
 document.getElementById('gp-swap').addEventListener('click',()=>{
@@ -1547,12 +1715,17 @@ document.getElementById('gp-swap').addEventListener('click',()=>{
   document.getElementById('gp-end').value=g.end;
   document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${g.start}, ${g.end})`;
   render();saveState();
+  refreshSoundMapping();
 });
 document.getElementById('gp-blend').addEventListener('change',e=>{
   if(gradTi===null) return;
   pushHistory();
   channels[gradTi].grad.blend=e.target.value;
   render();saveState();
+});
+document.getElementById('gp-advanced-toggle').addEventListener('click',()=>{
+  const open=document.getElementById('gp-advanced-body').classList.toggle('open');
+  document.getElementById('gp-advanced-toggle').classList.toggle('open',open);
 });
 document.getElementById('gp-opacity').addEventListener('input',e=>{
   if(gradTi===null) return;
@@ -1567,8 +1740,288 @@ document.addEventListener('mousedown',e=>{
 });
 
 // ════════════════════════════════════════════════════════
-// CARD PICKER
+// GRADIENT POPUP — SOUND MAPPING (Frequency / CMYK / ADSR)
+// All four views (RGB swatch, Frequency, CMYK, ADSR) describe the same
+// underlying color and stay in sync, since they're just different lenses
+// on the same r,g,b — CMYK and ADSR are read from/written to it via the
+// same formulas the audio engine itself uses (see scheduleCardNote).
 // ════════════════════════════════════════════════════════
+let gpSoundTarget='start';
+let gpSoundSyncing=false; // guards against feedback loops while we set fields programmatically
+
+// ── Gradient popup color wheel — same white-center/black-edge HSL map as
+// the Circle visualizer, scaled down. Rendered at the current saturation
+// (controlled by the slider beside it), cached and only rebuilt when that
+// saturation actually changes.
+let gpWheelSat=1;
+let gpWheelBgCanvas=null,gpWheelBgSat=null;
+function buildGpWheelBg(size,sat){
+  const off=document.createElement('canvas');off.width=size;off.height=size;
+  const octx=off.getContext('2d');
+  const img=octx.createImageData(size,size);
+  const data=img.data;
+  const cx=size/2,cy=size/2,maxR=size/2-2;
+  for(let py=0;py<size;py++){
+    for(let px=0;px<size;px++){
+      const dx=px-cx,dy=py-cy;
+      const rr=Math.hypot(dx,dy);
+      const idx=(py*size+px)*4;
+      if(rr>maxR+1){data[idx+3]=0;continue;}
+      const angle=Math.atan2(dy,dx);
+      let hue=(angle+Math.PI/2)*(180/Math.PI);
+      hue=((hue%360)+360)%360;
+      const l=Math.max(0,Math.min(1,1-rr/maxR));
+      const col=hslToRgb(hue,sat,l);
+      data[idx]=col.r;data[idx+1]=col.g;data[idx+2]=col.b;
+      data[idx+3]=rr>maxR-1?Math.round(255*(maxR-rr+1)/2):255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  return off;
+}
+function drawGpWheel(){
+  const canvas=document.getElementById('gp-wheel');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const size=canvas.width;
+  if(!gpWheelBgCanvas||gpWheelBgSat!==gpWheelSat){
+    gpWheelBgCanvas=buildGpWheelBg(size,gpWheelSat);
+    gpWheelBgSat=gpWheelSat;
+  }
+  ctx.clearRect(0,0,size,size);
+  ctx.drawImage(gpWheelBgCanvas,0,0);
+  if(gradTi===null) return;
+  const hex=channels[gradTi].grad[gpSoundTarget];
+  const{r,g,b}=hexToRgb(hex);
+  const h=rgbToHue(r,g,b);
+  const l=rgbLightness(r,g,b);
+  const cx=size/2,cy=size/2,maxR=size/2-2;
+  const angle=h>=0?((h/360)*Math.PI*2-Math.PI/2):-Math.PI/2;
+  const rad=(1-l)*maxR;
+  const mx=cx+Math.cos(angle)*rad,my=cy+Math.sin(angle)*rad;
+  const lum=(r*299+g*587+b*114)/1000;
+  const ring=lum>140?'rgba(0,0,0,.85)':'rgba(255,255,255,.95)';
+  ctx.beginPath();ctx.arc(mx,my,6,0,Math.PI*2);
+  ctx.strokeStyle=ring;ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(mx,my,1.5,0,Math.PI*2);
+  ctx.fillStyle=ring;ctx.fill();
+}
+let gpWheelDragging=false;
+function gpWheelPick(clientX,clientY){
+  const canvas=document.getElementById('gp-wheel');
+  const rect=canvas.getBoundingClientRect();
+  const size=canvas.width;
+  const scaleX=size/rect.width,scaleY=size/rect.height;
+  const px=(clientX-rect.left)*scaleX,py=(clientY-rect.top)*scaleY;
+  const cx=size/2,cy=size/2,maxR=size/2-2;
+  const dx=px-cx,dy=py-cy;
+  let rr=Math.hypot(dx,dy);
+  if(rr>maxR) rr=maxR; // clamp so dragging past the edge still picks the rim color
+  const angle=Math.atan2(dy,dx);
+  let hue=(angle+Math.PI/2)*(180/Math.PI);
+  hue=((hue%360)+360)%360;
+  const l=Math.max(0,Math.min(1,1-rr/maxR));
+  applySoundColor(hslToRgb(hue,gpWheelSat,l));
+}
+const gpWheelEl=document.getElementById('gp-wheel');
+gpWheelEl.addEventListener('mousedown',e=>{
+  if(gradTi===null) return;
+  gpWheelDragging=true;beginGesture();gpWheelPick(e.clientX,e.clientY);
+});
+document.addEventListener('mousemove',e=>{
+  if(gpWheelDragging) gpWheelPick(e.clientX,e.clientY);
+});
+document.addEventListener('mouseup',()=>{
+  if(gpWheelDragging){gpWheelDragging=false;commitGesture();}
+});
+gpWheelEl.addEventListener('touchstart',e=>{
+  if(gradTi===null) return;
+  e.preventDefault();gpWheelDragging=true;beginGesture();
+  const t=e.touches[0];gpWheelPick(t.clientX,t.clientY);
+},{passive:false});
+gpWheelEl.addEventListener('touchmove',e=>{
+  if(!gpWheelDragging) return;
+  e.preventDefault();const t=e.touches[0];gpWheelPick(t.clientX,t.clientY);
+},{passive:false});
+gpWheelEl.addEventListener('touchend',()=>{
+  if(gpWheelDragging){gpWheelDragging=false;commitGesture();}
+});
+
+// Saturation slider — re-saturates the active color at its current hue/lightness,
+// and (since drawGpWheel reads gpWheelSat) reshapes the wheel's background to match.
+document.getElementById('gp-wheel-sat').addEventListener('input',e=>{
+  if(gradTi===null||gpSoundSyncing) return;
+  beginGesture();
+  const hex=channels[gradTi].grad[gpSoundTarget];
+  const{r,g,b}=hexToRgb(hex);
+  const h=rgbToHue(r,g,b);
+  const hh=h<0?0:h;
+  const l=rgbLightness(r,g,b);
+  const newSat=parseInt(e.target.value)/100;
+  applySoundColor(hslToRgb(hh,newSat,l));
+});
+document.getElementById('gp-wheel-sat').addEventListener('change',commitGesture);
+
+function refreshSoundMapping(){
+  if(gradTi===null) return;
+  gpSoundSyncing=true;
+  const hex=channels[gradTi].grad[gpSoundTarget];
+  const{r,g,b}=hexToRgb(hex);
+
+  gpWheelSat=rgbToHSLSaturation(r,g,b);
+  document.getElementById('gp-wheel-sat').value=Math.round(gpWheelSat*100);
+  document.getElementById('gp-wheel-sat-val').textContent=Math.round(gpWheelSat*100)+'%';
+
+  document.getElementById('gp-rgb-r').value=r;
+  document.getElementById('gp-rgb-g').value=g;
+  document.getElementById('gp-rgb-b').value=b;
+  const hueForDisplay=rgbToHue(r,g,b);
+  document.getElementById('gp-hsl-h').value=Math.round(hueForDisplay<0?0:hueForDisplay);
+  document.getElementById('gp-hsl-s').value=Math.round(rgbToHSLSaturation(r,g,b)*100);
+  document.getElementById('gp-hsl-l').value=Math.round(rgbLightness(r,g,b)*100);
+
+  const freq=rgbToFreq(r,g,b);
+  document.getElementById('gp-freq-num').value=freq.toFixed(1);
+  document.getElementById('gp-freq-slider').value=Math.max(170,Math.min(700,freq));
+
+  const cmyk=toCMYK(r,g,b);
+  document.getElementById('gp-c').value=Math.round(cmyk.c*100);
+  document.getElementById('gp-c-val').textContent=Math.round(cmyk.c*100)+'%';
+  document.getElementById('gp-m').value=Math.round(cmyk.m*100);
+  document.getElementById('gp-m-val').textContent=Math.round(cmyk.m*100)+'%';
+  document.getElementById('gp-y').value=Math.round(cmyk.y*100);
+  document.getElementById('gp-y-val').textContent=Math.round(cmyk.y*100)+'%';
+  document.getElementById('gp-k').value=Math.round(cmyk.k*100);
+  document.getElementById('gp-k-val').textContent=Math.round(cmyk.k*100)+'%';
+
+  const A=Math.round((0.004+cmyk.c*0.04)*1000);
+  const D=Math.round((0.02+cmyk.m*0.08)*1000);
+  const S=Math.round((0.25+cmyk.y*0.4)*100);
+  const R=Math.round((0.03+cmyk.k*0.15)*1000);
+  document.getElementById('gp-a').value=A;document.getElementById('gp-a-val').textContent=A+'ms';
+  document.getElementById('gp-d').value=D;document.getElementById('gp-d-val').textContent=D+'ms';
+  document.getElementById('gp-s').value=S;document.getElementById('gp-s-val').textContent=S+'%';
+  document.getElementById('gp-r').value=R;document.getElementById('gp-r-val').textContent=R+'ms';
+
+  gpSoundSyncing=false;
+  drawGpWheel();
+}
+
+function applySoundColor(newRgb){
+  if(gradTi===null||gpSoundSyncing) return;
+  const clamp=v=>Math.max(0,Math.min(255,Math.round(v)));
+  const hex='#'+[clamp(newRgb.r),clamp(newRgb.g),clamp(newRgb.b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  channels[gradTi].grad[gpSoundTarget]=hex;
+  document.getElementById('gp-'+gpSoundTarget).value=hex;
+  const g=channels[gradTi].grad;
+  document.getElementById('gp-preview').style.background=`linear-gradient(to right, ${g.start}, ${g.end})`;
+  render();saveState();
+  refreshSoundMapping();
+}
+
+document.querySelectorAll('.gp-point').forEach(pt=>{
+  pt.addEventListener('click',e=>{
+    gpSoundTarget=pt.dataset.target;
+    document.querySelectorAll('.gp-point').forEach(p=>p.classList.toggle('active',p===pt));
+    refreshSoundMapping();
+  });
+});
+
+// Frequency — retunes by rotating hue, preserving the swatch's own
+// saturation/lightness (so a pastel stays pastel, just at a new pitch).
+function setFrequency(targetHz,commit){
+  if(gradTi===null||gpSoundSyncing) return;
+  const cur=hexToRgb(channels[gradTi].grad[gpSoundTarget]);
+  const s=rgbToHSLSaturation(cur.r,cur.g,cur.b);
+  const l=rgbLightness(cur.r,cur.g,cur.b);
+  const hue=freqToHue(targetHz);
+  applySoundColor(hslToRgb(hue,s,l),{commit});
+}
+document.getElementById('gp-freq-slider').addEventListener('input',e=>{
+  beginGesture();setFrequency(parseFloat(e.target.value),false);
+});
+document.getElementById('gp-freq-slider').addEventListener('change',commitGesture);
+document.getElementById('gp-freq-num').addEventListener('change',e=>{
+  const v=Math.max(170,Math.min(700,parseFloat(e.target.value)||440));
+  pushHistory();setFrequency(v,false);
+});
+
+// CMYK — direct, since it's just a different coordinate system for the same RGB.
+function readCMYKFields(){
+  return{
+    c:parseInt(document.getElementById('gp-c').value)/100,
+    m:parseInt(document.getElementById('gp-m').value)/100,
+    y:parseInt(document.getElementById('gp-y').value)/100,
+    k:parseInt(document.getElementById('gp-k').value)/100
+  };
+}
+
+// RGB — direct number entry, the most reliable cross-browser color input
+// since it doesn't depend on the OS/browser native color dialog at all.
+['gp-rgb-r','gp-rgb-g','gp-rgb-b'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    if(gpSoundSyncing) return;
+    beginGesture();
+    const r=Math.max(0,Math.min(255,parseInt(document.getElementById('gp-rgb-r').value)||0));
+    const g=Math.max(0,Math.min(255,parseInt(document.getElementById('gp-rgb-g').value)||0));
+    const b=Math.max(0,Math.min(255,parseInt(document.getElementById('gp-rgb-b').value)||0));
+    applySoundColor({r,g,b});
+  });
+  document.getElementById(id).addEventListener('change',commitGesture);
+});
+
+// HSL — same idea, direct entry instead of relying on a native picker.
+['gp-hsl-h','gp-hsl-s','gp-hsl-l'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    if(gpSoundSyncing) return;
+    beginGesture();
+    const h=Math.max(0,Math.min(359,parseInt(document.getElementById('gp-hsl-h').value)||0));
+    const s=Math.max(0,Math.min(100,parseInt(document.getElementById('gp-hsl-s').value)||0))/100;
+    const l=Math.max(0,Math.min(100,parseInt(document.getElementById('gp-hsl-l').value)||0))/100;
+    applySoundColor(hslToRgb(h,s,l));
+  });
+  document.getElementById(id).addEventListener('change',commitGesture);
+});
+
+['gp-c','gp-m','gp-y','gp-k'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    if(gpSoundSyncing) return;
+    beginGesture();
+    document.getElementById(id+'-val').textContent=e.target.value+'%';
+    const cmyk=readCMYKFields();
+    applySoundColor(cmykToRgb(cmyk.c,cmyk.m,cmyk.y,cmyk.k));
+  });
+  document.getElementById(id).addEventListener('change',commitGesture);
+});
+
+// ADSR — linearly related to CMYK by the same formulas the audio engine
+// uses, so editing the envelope directly is just CMYK viewed a different way.
+function readADSRAsCMYK(){
+  const A=parseInt(document.getElementById('gp-a').value)/1000;
+  const D=parseInt(document.getElementById('gp-d').value)/1000;
+  const S=parseInt(document.getElementById('gp-s').value)/100;
+  const R=parseInt(document.getElementById('gp-r').value)/1000;
+  const clamp01=v=>Math.max(0,Math.min(1,v));
+  return{
+    c:clamp01((A-0.004)/0.04),
+    m:clamp01((D-0.02)/0.08),
+    y:clamp01((S-0.25)/0.4),
+    k:clamp01((R-0.03)/0.15)
+  };
+}
+['gp-a','gp-d','gp-s','gp-r'].forEach(id=>{
+  const suffix=id==='gp-s'?'%':'ms';
+  document.getElementById(id).addEventListener('input',e=>{
+    if(gpSoundSyncing) return;
+    beginGesture();
+    document.getElementById(id+'-val').textContent=e.target.value+suffix;
+    const cmyk=readADSRAsCMYK();
+    applySoundColor(cmykToRgb(cmyk.c,cmyk.m,cmyk.y,cmyk.k));
+  });
+  document.getElementById(id).addEventListener('change',commitGesture);
+});
+
+
 const cpEl=document.getElementById('card-picker');
 let pickerTi=null,pickerSi=null;
 
@@ -1645,43 +2098,93 @@ function rgbSaturation(r,g,b){
   return mx===0?0:(mx-mn)/mx;
 }
 function rgbValue(r,g,b){return Math.max(r,g,b)/255;}
+function rgbLightness(r,g,b){
+  const mx=Math.max(r,g,b)/255,mn=Math.min(r,g,b)/255;
+  return (mx+mn)/2;
+}
+// h in [0,360), s,l in [0,1] → {r,g,b} 0-255. Standard HSL conversion.
+function hslToRgb(h,s,l){
+  h=((h%360)+360)%360;
+  const c=(1-Math.abs(2*l-1))*s;
+  const x=c*(1-Math.abs((h/60)%2-1));
+  const m=l-c/2;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;b=0;}
+  else if(h<120){r=x;g=c;b=0;}
+  else if(h<180){r=0;g=c;b=x;}
+  else if(h<240){r=0;g=x;b=c;}
+  else if(h<300){r=x;g=0;b=c;}
+  else {r=c;g=0;b=x;}
+  return{r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((b+m)*255)};
+}
 
-const CIRCLE_CX=260,CIRCLE_CY=260,CIRCLE_OUTER_R=195,CIRCLE_INNER_R=140,CIRCLE_DOT_R=7;
-const SUIT_R_OFFSET={major:0,wands:8,cups:-8,swords:4,disks:-4};
+const CIRCLE_CX=260,CIRCLE_CY=260,CIRCLE_MAX_R=195,CIRCLE_DOT_R=7;
 
 // Shared position formula — used for both the static 78-card layout AND
 // for repositioning a note live by its EFFECTIVE (gradient-blended) color.
-function computeCirclePos(r,g,b,suit){
-  const h=rgbToHue(r,g,b),s=rgbSaturation(r,g,b),v=rgbValue(r,g,b);
-  const dim=(s<0.15||v<0.1);
-  const hh=h<0?0:h;
-  const angle=(hh/360)*Math.PI*2-Math.PI/2;
-  const rad=dim?CIRCLE_INNER_R:(CIRCLE_OUTER_R+(SUIT_R_OFFSET[suit]||0));
-  return{x:CIRCLE_CX+Math.cos(angle)*rad,y:CIRCLE_CY+Math.sin(angle)*rad,dim};
+// Angle = hue (matches the note ring below). Radius = lightness:
+// white (L=1) sits at the center, black (L=0) sits at the outer edge —
+// the classic double-cone HSL wheel, flattened to one ring per hue.
+function computeCirclePos(r,g,b){
+  const h=rgbToHue(r,g,b);
+  const l=rgbLightness(r,g,b);
+  const angle=h>=0?((h/360)*Math.PI*2-Math.PI/2):-Math.PI/2;
+  const rad=(1-l)*CIRCLE_MAX_R;
+  return{x:CIRCLE_CX+Math.cos(angle)*rad,y:CIRCLE_CY+Math.sin(angle)*rad};
 }
 
 function buildCircleLayout(){
   circleCardHits=[];
-  const vivid=[],dim=[];
+  const achromatic=BASE_CARDS.filter(c=>rgbToHue(c.r,c.g,c.b)<0);
+  let achroIdx=0;
   BASE_CARDS.forEach(card=>{
     const h=rgbToHue(card.r,card.g,card.b);
-    const s=rgbSaturation(card.r,card.g,card.b);
-    const v=rgbValue(card.r,card.g,card.b);
-    if(s<0.15||v<0.1){dim.push({...card,h:h<0?0:h,s,v});}
-    else{vivid.push({...card,h,s,v});}
-  });
-  vivid.forEach(card=>{
-    const pos=computeCirclePos(card.r,card.g,card.b,card.suit);
-    circleCardHits.push({n:card.n,x:pos.x,y:pos.y,r:CIRCLE_DOT_R,card});
-  });
-  // Inner ring (dim/achromatic) spread evenly since hue is undefined for these
-  dim.forEach((card,i)=>{
-    const frac=i/Math.max(dim.length,1);
-    const angle=frac*Math.PI*2-Math.PI/2;
-    const x=CIRCLE_CX+Math.cos(angle)*CIRCLE_INNER_R;
-    const y=CIRCLE_CY+Math.sin(angle)*CIRCLE_INNER_R;
+    const l=rgbLightness(card.r,card.g,card.b);
+    let angle;
+    if(h>=0){
+      angle=(h/360)*Math.PI*2-Math.PI/2;
+    } else {
+      // True achromatic (r=g=b) — hue is genuinely undefined. Spread these
+      // evenly around the ring at their own lightness radius so they don't stack.
+      const frac=achromatic.length>1?achroIdx/achromatic.length:0;
+      angle=frac*Math.PI*2-Math.PI/2;
+      achroIdx++;
+    }
+    const rad=(1-l)*CIRCLE_MAX_R;
+    const x=CIRCLE_CX+Math.cos(angle)*rad;
+    const y=CIRCLE_CY+Math.sin(angle)*rad;
     circleCardHits.push({n:card.n,x,y,r:CIRCLE_DOT_R,card});
   });
+  buildCircleWheelBitmap();
+}
+
+// Cached offscreen bitmap of the white-center → hue → black-edge wheel,
+// computed once per layout build (not per frame) since it never changes.
+let circleWheelCanvas=null;
+function buildCircleWheelBitmap(){
+  const size=CIRCLE_MAX_R*2+8;
+  const off=document.createElement('canvas');off.width=size;off.height=size;
+  const octx=off.getContext('2d');
+  const img=octx.createImageData(size,size);
+  const data=img.data;
+  const cx=size/2,cy=size/2;
+  for(let py=0;py<size;py++){
+    for(let px=0;px<size;px++){
+      const dx=px-cx,dy=py-cy;
+      const rr=Math.hypot(dx,dy);
+      const idx=(py*size+px)*4;
+      if(rr>CIRCLE_MAX_R+2){data[idx+3]=0;continue;}
+      const angle=Math.atan2(dy,dx);
+      let hue=(angle+Math.PI/2)*(180/Math.PI);
+      hue=((hue%360)+360)%360;
+      const l=Math.max(0,Math.min(1,1-rr/CIRCLE_MAX_R));
+      const col=hslToRgb(hue,1,l);
+      data[idx]=col.r;data[idx+1]=col.g;data[idx+2]=col.b;
+      data[idx+3]=rr>CIRCLE_MAX_R-2?Math.round(255*(CIRCLE_MAX_R-rr+2)/4):255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  circleWheelCanvas=off;
 }
 
 function drawCircle(){
@@ -1691,14 +2194,14 @@ function drawCircle(){
   const cx=W/2,cy=H/2;
   ctx.clearRect(0,0,W,H);
 
-  // Background
-  const bg=ctx.createRadialGradient(cx,cy,20,cx,cy,220);
-  bg.addColorStop(0,'rgba(18,12,36,.95)');bg.addColorStop(1,'rgba(4,2,14,.95)');
-  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Background — cached white-center → hue → black-edge wheel bitmap
+  if(!circleWheelCanvas) buildCircleWheelBitmap();
+  const bgSize=CIRCLE_MAX_R*2+8;
+  ctx.drawImage(circleWheelCanvas,cx-bgSize/2,cy-bgSize/2,bgSize,bgSize);
 
   // Outer reference ring (chromatic notes)
   ctx.save();
-  ctx.strokeStyle='rgba(201,169,110,.08)';ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(10,6,20,.18)';ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(cx,cy,218,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,162,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,110,0,Math.PI*2);ctx.stroke();
@@ -1738,7 +2241,9 @@ function drawCircle(){
   ctx.rotate(midAngle+Math.PI/2);
   ctx.font='7px Cinzel, serif';ctx.fillStyle='rgba(180,120,200,.55)';
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('TRICKNOLOGIC BRIDGE',0,0);
+  ctx.fillText('TRICKNOLOGIC BRIDGE',0,-5);
+  ctx.font='italic 6.5px EB Garamond, serif';ctx.fillStyle='rgba(180,120,200,.4)';
+  ctx.fillText('F₄⊕F₅ — no real notes here',0,6);
   ctx.restore();
 
   // Spokes
@@ -1746,7 +2251,7 @@ function drawCircle(){
     const ang=(a/12)*Math.PI*2-Math.PI/2;
     ctx.beginPath();ctx.moveTo(cx,cy);
     ctx.lineTo(cx+Math.cos(ang)*215,cy+Math.sin(ang)*215);
-    ctx.strokeStyle='rgba(201,169,110,.04)';ctx.lineWidth=1;ctx.stroke();
+    ctx.strokeStyle='rgba(10,6,20,.08)';ctx.lineWidth=1;ctx.stroke();
   }
 
   // Compute DYNAMIC positions for active notes — based on their EFFECTIVE
@@ -1755,7 +2260,7 @@ function drawCircle(){
   activeNotes.forEach(an=>{
     const card=BASE_CARDS.find(c=>c.n===an.n);
     if(!card) return;
-    const pos=computeCirclePos(an.r,an.g,an.b,card.suit);
+    const pos=computeCirclePos(an.r,an.g,an.b);
     dynPos.set(an.n,{x:pos.x,y:pos.y,r:an.r,g:an.g,b:an.b});
   });
 
@@ -1786,11 +2291,16 @@ function drawCircle(){
     }
   }
 
-  // Draw all 78 static card dots (faint reference layer)
+  // Draw all 78 static card dots — only suits currently audible (not muted,
+  // and restricted to soloed channels when any track is soloed)
+  const audibleSuits=getAudibleSuits();
   circleCardHits.forEach(hit=>{
     const{card,x,y,r,n}=hit;
+    if(!audibleSuits.has(card.suit)) return;
     const isActiveHere=dynPos.has(n)&&Math.hypot(dynPos.get(n).x-x,dynPos.get(n).y-y)<=4;
     const col=isActiveHere?dynPos.get(n):cardColor(n);
+    const lum=(col.r*299+col.g*587+col.b*114)/1000;
+    const contrastStroke=lum>140?'rgba(0,0,0,.55)':'rgba(255,255,255,.6)';
     if(isActiveHere){
       const grd=ctx.createRadialGradient(x,y,0,x,y,r*3.5);
       grd.addColorStop(0,`rgba(${col.r},${col.g},${col.b},0.6)`);
@@ -1799,8 +2309,8 @@ function drawCircle(){
     }
     ctx.beginPath();ctx.arc(x,y,isActiveHere?r*1.6:r,0,Math.PI*2);
     ctx.fillStyle=`rgb(${col.r},${col.g},${col.b})`;ctx.fill();
-    ctx.strokeStyle=isActiveHere?'rgba(255,255,255,.9)':`rgba(255,255,255,${card.suit==='major'?0.25:0.1})`;
-    ctx.lineWidth=isActiveHere?1.5:0.8;ctx.stroke();
+    ctx.strokeStyle=isActiveHere?'rgba(255,255,255,.95)':contrastStroke;
+    ctx.lineWidth=isActiveHere?1.5:1;ctx.stroke();
   });
 
   // Draw shifted active dots (gradient-displaced) on top, at their dynamic spot
@@ -1813,7 +2323,7 @@ function drawCircle(){
     ctx.beginPath();ctx.arc(dp.x,dp.y,CIRCLE_DOT_R*3.5,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
     ctx.beginPath();ctx.arc(dp.x,dp.y,CIRCLE_DOT_R*1.6,0,Math.PI*2);
     ctx.fillStyle=`rgb(${dp.r},${dp.g},${dp.b})`;ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=1.5;ctx.stroke();
   });
 
   // Center label
