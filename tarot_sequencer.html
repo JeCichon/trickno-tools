@@ -40,6 +40,8 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 #sb-status{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.15em;color:rgba(201,169,110,.3);}
 #bar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
 .nav-link{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.15em;color:rgba(201,169,110,.3);text-decoration:none;padding:4px 8px;border:1px solid rgba(201,169,110,.1);border-radius:2px;transition:all .2s;}
+.oct-mode-btn{border-color:rgba(201,169,110,.2);color:rgba(201,169,110,.5);letter-spacing:.08em;}
+.oct-mode-btn.multi{border-color:rgba(120,200,255,.5);color:rgba(140,210,255,.9);background:rgba(80,160,220,.08);}
 .nav-link:hover{color:var(--gold);border-color:var(--border);}
 
 /* TRACKS */
@@ -82,7 +84,8 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .grad-btn:hover{border-color:var(--gold);}
 .grad-btn.on{border-color:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.25);}
 
-#grad-popup{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:220px;max-height:90vh;overflow-y:auto;}
+/* ── GRADIENT POPUP ─────────────────────────────── */
+#grad-popup{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.95);display:none;width:440px;max-width:96vw;max-height:90vh;overflow-y:auto;}
 #grad-popup.show{display:block;}
 #gp-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 #gp-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.18em;color:var(--gold);flex:1;}
@@ -90,18 +93,19 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .gp-toggle .gp-knob{width:12px;height:12px;border-radius:50%;background:rgba(201,169,110,.4);position:absolute;top:1px;left:1px;transition:transform .2s,background .2s;}
 .gp-toggle.on{background:rgba(100,220,140,.18);border-color:rgba(100,220,140,.5);}
 .gp-toggle.on .gp-knob{transform:translateX(14px);background:rgba(140,255,160,.9);}
-#gp-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
-#gp-row input[type=color]{width:30px;height:24px;border:1px solid var(--border);border-radius:3px;background:none;cursor:pointer;padding:0;}
-#gp-preview{flex:1;height:18px;border-radius:3px;min-width:60px;}
-#gp-swap{width:24px;height:24px;border:1px solid var(--border);background:rgba(0,0,0,.4);color:var(--gold);cursor:pointer;border-radius:3px;font-size:13px;line-height:1;flex-shrink:0;transition:all .15s;}
-#gp-swap:hover{border-color:var(--gold);background:var(--gf);}
-.gp-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.15em;color:rgba(201,169,110,.4);}
-#gp-blend{width:100%;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:10px;padding:4px 6px;border-radius:3px;margin-bottom:9px;}
-#gp-opacity-row{display:flex;align-items:center;gap:8px;}
-#gp-sound-section{margin-top:10px;padding-top:10px;border-top:1px solid rgba(201,169,110,.12);max-height:280px;overflow-y:auto;overflow-x:hidden;padding-right:6px;}
-#gp-sound-section::-webkit-scrollbar{width:6px;}
-#gp-sound-section::-webkit-scrollbar-thumb{background:rgba(201,169,110,.2);border-radius:3px;}
-#gp-wheel-row{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:6px;}
+
+/* 3-column main row */
+#gp-main-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;}
+
+/* Left col — compact RGB/HSL pairs */
+#gp-left-col{display:flex;flex-direction:column;gap:0;flex-shrink:0;width:96px;}
+.gp-pair-label{display:flex;justify-content:space-between;font-family:'Cinzel',serif;font-size:7px;letter-spacing:.12em;color:rgba(201,169,110,.4);padding:5px 2px 2px;}
+.gp-pair-row{display:flex;gap:4px;}
+.gp-num{flex:1;width:0;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:12px;padding:3px 4px;border-radius:3px;text-align:center;min-width:0;}
+.gp-num:focus{outline:none;border-color:var(--gold);}
+
+/* Center col — wheel sits here */
+#gp-center-col{display:flex;gap:8px;align-items:center;flex-shrink:0;}
 #gp-wheel-wrap{display:flex;justify-content:center;}
 #gp-wheel{border-radius:50%;cursor:crosshair;box-shadow:0 4px 18px rgba(0,0,0,.5);touch-action:none;}
 #gp-sat-wrap{display:flex;flex-direction:column;align-items:center;height:150px;justify-content:space-between;gap:4px;}
@@ -110,12 +114,52 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 #gp-wheel-sat{position:absolute;width:118px;height:24px;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-90deg);accent-color:var(--gold);cursor:pointer;margin:0;}
 #gp-wheel-sat-val{font-family:'Cinzel',serif;font-size:8px;color:var(--gold);min-width:28px;text-align:center;}
 
+/* Right col — note display + freq canvas */
+#gp-right-col{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+
+/* Note display */
+#gp-note-display{position:relative;padding-bottom:8px;border-bottom:1px solid rgba(201,169,110,.08);}
+#gp-note-row{display:flex;align-items:center;justify-content:space-between;height:20px;position:relative;}
+.gp-note-name{font-family:'Cinzel',serif;font-size:9px;color:var(--gold);cursor:pointer;padding:2px 4px;border-radius:2px;transition:background .12s;flex-shrink:0;user-select:none;}
+.gp-note-name:hover{background:rgba(201,169,110,.15);}
+.gp-note-dot{width:5px;height:5px;background:rgba(201,169,110,.28);border-radius:50%;cursor:pointer;transition:all .15s;flex-shrink:0;}
+.gp-note-dot:hover{background:rgba(201,169,110,.7);transform:scale(1.3);}
+.gp-note-dot.active{background:var(--gold);box-shadow:0 0 5px rgba(201,169,110,.8);}
+#gp-note-indicator{position:absolute;bottom:0;height:2px;border-radius:1px;background:linear-gradient(to right,rgba(201,169,110,.4),var(--gold),rgba(201,169,110,.4));transition:left .08s,width .08s;pointer-events:none;}
+
+/* Visual frequency canvas */
+#gp-freq-canvas{width:100%;height:120px;border-radius:4px;cursor:ns-resize;display:block;box-shadow:inset 0 0 0 1px rgba(201,169,110,.15);}
+
+/* Hz number + spin buttons */
+#gp-hz-row{display:flex;gap:4px;align-items:stretch;}
+#gp-freq-num{flex:1;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:13px;padding:4px 6px;border-radius:3px;min-width:0;}
+#gp-freq-num:focus{outline:none;border-color:var(--gold);}
+#gp-hz-spin{display:flex;flex-direction:column;gap:1px;}
+#gp-hz-spin button{width:20px;flex:1;background:rgba(0,0,0,.4);border:1px solid var(--border);color:rgba(201,169,110,.6);cursor:pointer;font-size:7px;border-radius:2px;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0;}
+#gp-hz-spin button:hover{border-color:var(--gold);color:var(--gold);background:var(--gf);}
+
+/* Gradient stops row */
+#gp-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+#gp-row input[type=color]{width:36px;height:32px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:0;}
+#gp-preview{flex:1;height:22px;border-radius:4px;min-width:40px;}
+#gp-swap{width:28px;height:28px;border:1px solid var(--border);background:rgba(0,0,0,.4);color:var(--gold);cursor:pointer;border-radius:3px;font-size:15px;line-height:1;flex-shrink:0;transition:all .15s;}
+#gp-swap:hover{border-color:var(--gold);background:var(--gf);}
 .gp-point{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:3px;border-radius:5px;transition:background .15s;}
 .gp-point:hover{background:rgba(201,169,110,.08);}
-.gp-point-marker{width:7px;height:7px;border-radius:50%;background:rgba(201,169,110,.18);transition:all .15s;}
+.gp-point-marker{width:8px;height:8px;border-radius:50%;background:rgba(201,169,110,.18);transition:all .15s;}
 .gp-point.active .gp-point-marker{background:var(--gold);box-shadow:0 0 7px rgba(201,169,110,.65);}
 
-.gp-collapse-header{width:100%;text-align:left;background:none;border:none;border-top:1px solid rgba(201,169,110,.12);color:rgba(201,169,110,.55);font-family:'Cinzel',serif;font-size:8px;letter-spacing:.15em;padding:9px 0 5px;margin-top:8px;cursor:pointer;display:flex;align-items:center;gap:7px;}
+/* Controls row: opacity + blend side by side */
+#gp-controls-row{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
+#gp-opacity-row{display:flex;align-items:center;gap:6px;flex:1;}
+#gp-opacity-row input[type=range]{flex:1;accent-color:var(--gold);}
+.gp-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.15em;color:rgba(201,169,110,.4);}
+#gp-opacity-val{font-family:'Cinzel',serif;font-size:9px;color:var(--gold);min-width:32px;text-align:right;}
+#gp-blend{background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:10px;padding:4px 6px;border-radius:3px;flex-shrink:0;}
+
+/* Sound section */
+#gp-sound-section{border-top:1px solid rgba(201,169,110,.1);padding-top:2px;}
+.gp-collapse-header{width:100%;text-align:left;background:none;border:none;color:rgba(201,169,110,.55);font-family:'Cinzel',serif;font-size:8px;letter-spacing:.15em;padding:8px 0 5px;cursor:pointer;display:flex;align-items:center;gap:7px;}
 .gp-collapse-header:hover{color:var(--gold);}
 .gp-collapse-caret{display:inline-block;transition:transform .15s;font-size:8px;}
 .gp-collapse-header.open .gp-collapse-caret{transform:rotate(90deg);}
@@ -123,23 +167,10 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .gp-collapse-body.open{display:block;}
 .gp-sub-label{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.18em;color:rgba(201,169,110,.4);margin:9px 0 5px;}
 .gp-sub-label .gp-sub-note{font-family:'EB Garamond',serif;letter-spacing:0;text-transform:none;opacity:.7;font-style:italic;}
-.gp-freq-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
-.gp-freq-row input[type=number]{width:62px;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:11px;padding:3px 5px;border-radius:3px;}
-.gp-freq-row span{font-size:9px;color:rgba(201,169,110,.5);}
-#gp-freq-slider{width:100%;accent-color:var(--gold);margin-bottom:5px;}
-.gp-mini-caption{font-size:8px;color:rgba(201,169,110,.32);font-style:italic;margin-bottom:4px;line-height:1.45;}
-.gp-rgbhsl-row{display:flex;gap:12px;margin-bottom:6px;}
-.gp-rgbhsl-col{flex:1;}
-.gp-rgbhsl-fields{display:flex;gap:5px;}
-.gp-rgbhsl-fields label{flex:1;display:flex;flex-direction:column;align-items:center;font-family:'Cinzel',serif;font-size:7px;letter-spacing:.1em;color:rgba(201,169,110,.45);gap:2px;}
-.gp-rgbhsl-fields input[type=number]{width:100%;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:11px;padding:3px 2px;border-radius:3px;text-align:center;}
-.gp-rgbhsl-fields input[type=number]:focus{outline:none;border-color:var(--gold);}
 .gp-quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-bottom:4px;}
 .gp-quad-item{display:flex;flex-direction:column;gap:2px;}
 .gp-quad-item label{font-size:7.5px;letter-spacing:.08em;color:rgba(201,169,110,.42);display:flex;justify-content:space-between;}
 .gp-quad-item input[type=range]{width:100%;accent-color:var(--gold);}
-#gp-opacity-row input[type=range]{flex:1;accent-color:var(--gold);}
-#gp-opacity-val{font-family:'Cinzel',serif;font-size:9px;color:var(--gold);min-width:32px;text-align:right;}
 .track-mini-btns{display:flex;flex-direction:column;gap:3px;}
 .tmb{width:24px;height:16px;font-family:'Cinzel',serif;font-size:6.5px;letter-spacing:.05em;background:rgba(0,0,0,.4);border:1px solid var(--border);color:rgba(201,169,110,.35);cursor:pointer;border-radius:2px;transition:all .15s;display:flex;align-items:center;justify-content:center;}
 .tmb:hover,.tmb.on{border-color:var(--gold);color:var(--gold);background:var(--gf);}
@@ -309,6 +340,8 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   <button id="new-song-btn" class="tb">＋ New Song</button>
   <button id="save-btn" class="tb">💾 Save</button>
   <button id="load-btn" class="tb">📂 Load</button>
+  <div class="sep"></div>
+  <button id="octave-mode-btn" class="tb oct-mode-btn" title="Toggle between single-octave (F4–F5) and multi-octave (lightness = register)">◈ OCTAVE: SINGLE</button>
   <div id="bar-right">
     <span id="sb-status">☁ connecting…</span>
     <a href="tarot_piano.html" class="nav-link">🎹 Piano</a>
@@ -394,19 +427,54 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
     <span id="gp-title">GRADIENT</span>
     <div class="gp-toggle" id="gp-toggle"><div class="gp-knob"></div></div>
   </div>
-  <div id="gp-wheel-row">
-    <div id="gp-wheel-wrap">
-      <canvas id="gp-wheel" width="150" height="150"></canvas>
-    </div>
-    <div id="gp-sat-wrap">
-      <span class="gp-sat-label">SAT</span>
-      <div id="gp-sat-slider-track">
-        <input type="range" id="gp-wheel-sat" min="0" max="100" value="100"/>
+
+  <div id="gp-main-row">
+    <div id="gp-left-col">
+      <div class="gp-pair-label">R<span>H</span></div>
+      <div class="gp-pair-row">
+        <input type="number" id="gp-rgb-r" class="gp-num" min="0" max="255" step="1"/>
+        <input type="number" id="gp-hsl-h" class="gp-num" min="0" max="359" step="1"/>
       </div>
-      <span id="gp-wheel-sat-val">100%</span>
+      <div class="gp-pair-label">G<span>S</span></div>
+      <div class="gp-pair-row">
+        <input type="number" id="gp-rgb-g" class="gp-num" min="0" max="255" step="1"/>
+        <input type="number" id="gp-hsl-s" class="gp-num" min="0" max="100" step="1"/>
+      </div>
+      <div class="gp-pair-label">B<span>L</span></div>
+      <div class="gp-pair-row">
+        <input type="number" id="gp-rgb-b" class="gp-num" min="0" max="255" step="1"/>
+        <input type="number" id="gp-hsl-l" class="gp-num" min="0" max="100" step="1"/>
+      </div>
+    </div>
+
+    <div id="gp-center-col">
+      <div id="gp-wheel-wrap">
+        <canvas id="gp-wheel" width="150" height="150"></canvas>
+      </div>
+      <div id="gp-sat-wrap">
+        <span class="gp-sat-label">SAT</span>
+        <div id="gp-sat-slider-track">
+          <input type="range" id="gp-wheel-sat" min="0" max="100" value="100"/>
+        </div>
+        <span id="gp-wheel-sat-val">100%</span>
+      </div>
+    </div>
+
+    <div id="gp-right-col">
+      <div id="gp-note-display">
+        <div id="gp-note-row"></div>
+        <div id="gp-note-indicator"></div>
+      </div>
+      <canvas id="gp-freq-canvas" width="88" height="120"></canvas>
+      <div id="gp-hz-row">
+        <input type="number" id="gp-freq-num" step="0.1" min="170" max="700"/>
+        <div id="gp-hz-spin">
+          <button id="gp-hz-up">&#9650;</button>
+          <button id="gp-hz-dn">&#9660;</button>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="gp-mini-caption">Same map as the Circle visualizer — white center, black edge, hue around. Click or drag to pick.</div>
 
   <div id="gp-row">
     <div class="gp-point active" id="gp-point-start" data-target="start">
@@ -418,58 +486,31 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
       <div class="gp-point-marker"></div>
       <input type="color" id="gp-end" value="#ffffff"/>
     </div>
-    <button id="gp-swap" title="Swap colors">⇄</button>
-  </div>
-  <div class="gp-mini-caption">Click a dot above a swatch to select it — that's the color the wheel, fields, and sliders below edit.</div>
-  <div class="gp-mini-caption" id="gp-native-caption">Swatches also open your browser's color dialog (handy on Chromium; some Firefox builds block it — use the wheel or fields instead).</div>
-
-  <div class="gp-rgbhsl-row">
-    <div class="gp-rgbhsl-col">
-      <div class="gp-sub-label">RGB</div>
-      <div class="gp-rgbhsl-fields">
-        <label>R<input type="number" id="gp-rgb-r" min="0" max="255" step="1"/></label>
-        <label>G<input type="number" id="gp-rgb-g" min="0" max="255" step="1"/></label>
-        <label>B<input type="number" id="gp-rgb-b" min="0" max="255" step="1"/></label>
-      </div>
-    </div>
-    <div class="gp-rgbhsl-col">
-      <div class="gp-sub-label">HSL</div>
-      <div class="gp-rgbhsl-fields">
-        <label>H<input type="number" id="gp-hsl-h" min="0" max="359" step="1"/></label>
-        <label>S<input type="number" id="gp-hsl-s" min="0" max="100" step="1"/></label>
-        <label>L<input type="number" id="gp-hsl-l" min="0" max="100" step="1"/></label>
-      </div>
-    </div>
+    <button id="gp-swap" title="Swap colors">&#8644;</button>
   </div>
 
-  <select id="gp-blend">
-    <option value="normal">Normal</option>
-    <option value="multiply">Multiply</option>
-    <option value="screen">Screen</option>
-    <option value="overlay">Overlay</option>
-    <option value="hard-light">Hard Light</option>
-    <option value="color-dodge">Color Dodge</option>
-    <option value="additive">Additive</option>
-    <option value="subtractive">Subtractive</option>
-    <option value="divide">Divide</option>
-  </select>
-  <div id="gp-opacity-row">
-    <span class="gp-label">OPACITY</span>
-    <input type="range" id="gp-opacity" min="0" max="100" value="100"/>
-    <span id="gp-opacity-val">100%</span>
+  <div id="gp-controls-row">
+    <div id="gp-opacity-row">
+      <span class="gp-label">OPACITY</span>
+      <input type="range" id="gp-opacity" min="0" max="100" value="100"/>
+      <span id="gp-opacity-val">100%</span>
+    </div>
+    <select id="gp-blend">
+      <option value="normal">Normal</option>
+      <option value="multiply">Multiply</option>
+      <option value="screen">Screen</option>
+      <option value="overlay">Overlay</option>
+      <option value="hard-light">Hard Light</option>
+      <option value="color-dodge">Color Dodge</option>
+      <option value="additive">Additive</option>
+      <option value="subtractive">Subtractive</option>
+      <option value="divide">Divide</option>
+    </select>
   </div>
 
   <div id="gp-sound-section">
-    <div class="gp-sub-label">FREQUENCY</div>
-    <div class="gp-freq-row">
-      <input type="number" id="gp-freq-num" step="0.1" min="170" max="700"/>
-      <span>Hz</span>
-    </div>
-    <input type="range" id="gp-freq-slider" min="170" max="700" value="440" step="0.5"/>
-    <div class="gp-mini-caption">Retunes by rotating this color around the wheel — its brightness and saturation stay the same.</div>
-
     <button id="gp-advanced-toggle" class="gp-collapse-header">
-      <span class="gp-collapse-caret">▸</span> CMYK &amp; ADSR ENVELOPE
+      <span class="gp-collapse-caret">&#9658;</span> CMYK &amp; ADSR ENVELOPE
     </button>
     <div id="gp-advanced-body" class="gp-collapse-body">
       <div class="gp-sub-label">CMYK <span class="gp-sub-note">drives the note's envelope</span></div>
@@ -479,7 +520,6 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
         <div class="gp-quad-item"><label>YELLOW <span id="gp-y-val">0%</span></label><input type="range" id="gp-y" min="0" max="100" value="0"/></div>
         <div class="gp-quad-item"><label>BLACK <span id="gp-k-val">0%</span></label><input type="range" id="gp-k" min="0" max="100" value="0"/></div>
       </div>
-
       <div class="gp-sub-label">ADSR ENVELOPE</div>
       <div class="gp-quad-grid">
         <div class="gp-quad-item"><label>ATTACK <span id="gp-a-val">0ms</span></label><input type="range" id="gp-a" min="4" max="44" value="4"/></div>
@@ -649,6 +689,7 @@ async function loadSupabaseCards(){
 // SONG LIBRARY (Supabase-backed save / load)
 // ════════════════════════════════════════════════════════
 let currentSongId=null,currentSongName='';
+let songMultiOctave=false; // per-song flag: false=single octave (F4–F5), true=multi-octave (lightness→octave)
 function updateSongNameDisplay(){
   const el=document.getElementById('current-song-name');
   if(currentSongId&&currentSongName){
@@ -659,6 +700,25 @@ function updateSongNameDisplay(){
     el.classList.add('unsaved');
   }
 }
+function updateOctaveModeBtn(){
+  const btn=document.getElementById('octave-mode-btn');
+  if(!btn) return;
+  btn.textContent=songMultiOctave?'◉ OCTAVE: MULTI':'◈ OCTAVE: SINGLE';
+  btn.classList.toggle('multi',songMultiOctave);
+  btn.title=songMultiOctave
+    ?'Multi-octave: lightness sets register (F2–F7). Click to switch to single-octave.'
+    :'Single-octave: all colors map to F4–F5. Click to switch to multi-octave.';
+}
+document.getElementById('octave-mode-btn').addEventListener('click',()=>{
+  pushHistory();
+  songMultiOctave=!songMultiOctave;
+  updateOctaveModeBtn();
+  // Refresh gradient popup if open so freq/note display update immediately
+  if(document.getElementById('grad-popup').classList.contains('show')&&gradTi!==null){
+    refreshSoundMapping();
+  }
+  saveState();
+});
 const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
 async function sbErrorText(res){
@@ -681,7 +741,7 @@ async function saveSongNew(name,sortOrder){
   const res=await fetch(`${SB_URL}/rest/v1/sequences`,{
     method:'POST',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns},sort_order:so})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave},sort_order:so})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -691,7 +751,7 @@ async function updateSong(id,name){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?id=eq.${id}`,{
     method:'PATCH',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns},updated_at:new Date().toISOString()})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave},updated_at:new Date().toISOString()})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -743,17 +803,20 @@ function applyLoadedSong(row){
   pushHistory();
   bpm=row.bpm||120;
   if(Array.isArray(row.tracks)){
-    // Legacy flat-track format from before the channel/pattern split
     const migrated=migrateFlatTracks(row.tracks,row.step_count||16);
     channels=migrated.channels;patterns=migrated.patterns;
+    songMultiOctave=false;
   } else if(row.tracks&&row.tracks.channels&&row.tracks.patterns){
     channels=row.tracks.channels;patterns=row.tracks.patterns;
+    songMultiOctave=row.tracks.multiOctave||false;
   } else {
     channels=[];patterns=[newPattern('Pattern 1',16,[])];
+    songMultiOctave=false;
   }
   activePatternIndex=0;
   document.getElementById('bpm-val').textContent=bpm;
   syncStepPresetUI();
+  updateOctaveModeBtn();
   currentSongId=row.id;currentSongName=row.name;
   updateSongNameDisplay();
   render();saveState();
@@ -818,6 +881,8 @@ function clearForNewSong(){
   patterns=[newPattern('Pattern 1',16,channels)];
   activePatternIndex=0;
   currentSongId=null;currentSongName='';
+  songMultiOctave=false;
+  updateOctaveModeBtn();
   updateSongNameDisplay();
   document.getElementById('bpm-val').textContent=bpm;
   syncStepPresetUI();
@@ -1012,6 +1077,84 @@ const COS_SPECTRUM=[ // {h: hue degrees, f: freq Hz, note} — chart-accurate, h
   {h:111,f:523.2,note:'C'}, {h:175,f:554.4,note:'C#'},{h:211,f:587.3,note:'D'},
   {h:241,f:622.2,note:'D#'},{h:258,f:659.3,note:'E'}, {h:273,f:698.5,note:'F'}
 ];
+// Full chromatic table for the octave mapped by the Color of Sound chart (F4–F5).
+// When multi-octave mode arrives this table will extend; for now it's one octave.
+const CHROMATIC_NOTES=[
+  {note:'F', octave:4,freq:349.2},{note:'F#',octave:4,freq:370.0},
+  {note:'G', octave:4,freq:392.0},{note:'G#',octave:4,freq:415.3},
+  {note:'A', octave:4,freq:440.0},{note:'A#',octave:4,freq:466.2},
+  {note:'B', octave:4,freq:493.9},{note:'C', octave:5,freq:523.2},
+  {note:'C#',octave:5,freq:554.4},{note:'D', octave:5,freq:587.3},
+  {note:'D#',octave:5,freq:622.2},{note:'E', octave:5,freq:659.3},
+  {note:'F', octave:5,freq:698.5}
+];
+// Extended chromatic table across octaves 2–6 for multi-octave mode.
+// Base pitch-class frequencies are from the Color of Sound chart (octave 4 anchor).
+const PITCH_CLASSES=[
+  {note:'F', freq4:349.2},{note:'F#',freq4:370.0},{note:'G', freq4:392.0},
+  {note:'G#',freq4:415.3},{note:'A', freq4:440.0},{note:'A#',freq4:466.2},
+  {note:'B', freq4:493.9},{note:'C', freq4:523.2},{note:'C#',freq4:554.4},
+  {note:'D', freq4:587.3},{note:'D#',freq4:622.2},{note:'E', freq4:659.3},
+];
+const CHROMATIC_NOTES_MULTI=(()=>{
+  const notes=[];
+  for(let oct=2;oct<=6;oct++){
+    PITCH_CLASSES.forEach(pc=>{
+      notes.push({note:pc.note,octave:oct,freq:pc.freq4*Math.pow(2,oct-4)});
+    });
+  }
+  // Add F7 as the top cap (= F5 × 4)
+  notes.push({note:'F',octave:7,freq:349.2*Math.pow(2,3)});
+  return notes.sort((a,b)=>a.freq-b.freq);
+})();
+
+// Multi-octave frequency mapping.
+// Hue → pitch class (same COS logic), Lightness → octave.
+// L=0→octave 2, L=0.5→octave 4 (matches single-octave exactly at mid-lightness),
+// L=1→octave 6. Formula: octave = 2 + L*4 (continuous).
+function rgbToFreqMultiOctave(r,g,b){
+  const l=rgbLightness(r,g,b);
+  const s=rgbToHSLSaturation(r,g,b);
+  if(l<0.04) return 87.31; // near-black → F2 (lowest practical note)
+  // Pitch class from hue — same COS logic as single-octave, anchored to oct4
+  let pitchFreq4;
+  if(s<0.12){
+    // Achromatic: use A as neutral pitch class
+    pitchFreq4=440.0;
+  } else {
+    pitchFreq4=rgbToFreq(r,g,b); // already returns F4–F5 range for chromatic
+  }
+  // Continuous octave shift from lightness (L=0.5 → shift=0, no change)
+  const octaveShift=(l-0.5)*4;
+  return Math.max(43.65,Math.min(5587.65,pitchFreq4*Math.pow(2,octaveShift)));
+}
+// Given any frequency, normalize to its pitch class in octave 4 (F4–F5 range).
+function normalizeToPitchClass4(hz){
+  const lo=349.2,hi=698.5;
+  let f=hz;
+  while(f<lo) f*=2;
+  while(f>=hi) f/=2;
+  return f;
+}
+// Active frequency function — picks single vs multi-octave based on current song flag.
+function activeRgbToFreq(r,g,b){
+  return songMultiOctave?rgbToFreqMultiOctave(r,g,b):rgbToFreq(r,g,b);
+}
+// Returns {lo, hi, t} where lo and hi are the two bounding CHROMATIC_NOTES entries
+// and t is the interpolation factor [0,1] from lo to hi.
+function freqToNote(hz){
+  const notes=songMultiOctave?CHROMATIC_NOTES_MULTI:CHROMATIC_NOTES;
+  if(hz<=notes[0].freq) return{lo:null,hi:notes[0],t:0};
+  if(hz>=notes[notes.length-1].freq) return{lo:notes[notes.length-1],hi:null,t:1};
+  for(let i=0;i<notes.length-1;i++){
+    if(hz>=notes[i].freq&&hz<=notes[i+1].freq){
+      const t=(hz-notes[i].freq)/(notes[i+1].freq-notes[i].freq);
+      return{lo:notes[i],hi:notes[i+1],t};
+    }
+  }
+  return{lo:notes[0],hi:notes[1],t:0};
+}
+function noteLabel(n){return n?`${n.note}${n.octave}`:'—';}
 // hue 273–360: magenta/pink — NOT in the source chart (no real wavelength for
 // non-spectral colors). Tricknologic's own bridge: glide one octave down,
 // closing the loop back to red. This is an invented extension, not chart data.
@@ -1128,7 +1271,7 @@ const WAVES={major:'sine',wands:'triangle',cups:'sine',swords:'sawtooth',disks:'
 
 function scheduleCardNote(n,t,dur,vol=0.8,octShift=0,effColor=null,pan=0){
   const col=effColor||cardColor(n);const card=BASE_CARDS.find(c=>c.n===n);if(!card) return;
-  const a=getCtx();const baseFreq=rgbToFreq(col.r,col.g,col.b);
+  const a=getCtx();const baseFreq=activeRgbToFreq(col.r,col.g,col.b);
   const freq=baseFreq*Math.pow(2,octShift);
   const cmyk=toCMYK(col.r,col.g,col.b);
   const A=0.004+cmyk.c*0.04,D=0.02+cmyk.m*0.08,sV=0.25+cmyk.y*0.4,R=0.03+cmyk.k*0.15,pk=0.22*vol;
@@ -2110,9 +2253,10 @@ function refreshSoundMapping(){
   document.getElementById('gp-hsl-s').value=Math.round(rgbToHSLSaturation(r,g,b)*100);
   document.getElementById('gp-hsl-l').value=Math.round(rgbLightness(r,g,b)*100);
 
-  const freq=rgbToFreq(r,g,b);
+  const freq=activeRgbToFreq(r,g,b);
   document.getElementById('gp-freq-num').value=freq.toFixed(1);
-  document.getElementById('gp-freq-slider').value=Math.max(170,Math.min(700,freq));
+  renderNoteDisplay(freq);
+  drawGpFreqCanvas(freq);
 
   const cmyk=toCMYK(r,g,b);
   document.getElementById('gp-c').value=Math.round(cmyk.c*100);
@@ -2163,18 +2307,225 @@ function setFrequency(targetHz,commit){
   if(gradTi===null||gpSoundSyncing) return;
   const cur=hexToRgb(channels[gradTi].grad[gpSoundTarget]);
   const s=rgbToHSLSaturation(cur.r,cur.g,cur.b);
-  const l=rgbLightness(cur.r,cur.g,cur.b);
-  const hue=freqToHue(targetHz);
-  applySoundColor(hslToRgb(hue,s,l),{commit});
+  if(songMultiOctave){
+    // Multi-octave: pitch class comes from hue, octave comes from lightness.
+    // Normalize targetHz to pitch class in oct4, get hue, then derive lightness from octave.
+    const pc4=normalizeToPitchClass4(targetHz);
+    const hue=freqToHue(pc4);
+    // Invert: octave = log2(targetHz/pc4) + 4, then l = (octave-2)/4
+    const octave=Math.log2(targetHz/pc4)+4;
+    const newL=Math.max(0.04,Math.min(0.97,(octave-2)/4));
+    applySoundColor(hslToRgb(hue,s,newL),{commit});
+  } else {
+    const l=rgbLightness(cur.r,cur.g,cur.b);
+    const hue=freqToHue(targetHz);
+    applySoundColor(hslToRgb(hue,s,l),{commit});
+  }
 }
-document.getElementById('gp-freq-slider').addEventListener('input',e=>{
-  beginGesture();setFrequency(parseFloat(e.target.value),false);
+// ── Visual frequency canvas ──────────────────────────────────────────────
+// The canvas shows the Color of Sound spectrum from the mode's low end (bottom)
+// to the high end (top). In single-octave: F4–F5. In multi-octave: F2–F7.
+let gpFreqCanvasDragging=false;
+function gpFreqRange(){
+  return songMultiOctave
+    ?{min:87.31,max:2793.6}   // F2–F7
+    :{min:349.2,max:698.5};   // F4–F5
+}
+function drawGpFreqCanvas(currentFreq){
+  const canvas=document.getElementById('gp-freq-canvas');
+  if(!canvas) return;
+  const W=canvas.width,H=canvas.height;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const{min:freqMin,max:freqMax}=gpFreqRange();
+  const steps=songMultiOctave?60:24;
+  const grd=ctx.createLinearGradient(0,H,0,0);
+  for(let i=0;i<=steps;i++){
+    const f=freqMin+(freqMax-freqMin)*(i/steps);
+    const col=freqToCanvasColor(f);
+    grd.addColorStop(i/steps,`rgb(${col.r},${col.g},${col.b})`);
+  }
+  ctx.fillStyle=grd;
+  const rx=4;
+  ctx.beginPath();
+  ctx.moveTo(rx,0);ctx.lineTo(W-rx,0);ctx.arcTo(W,0,W,rx,rx);
+  ctx.lineTo(W,H-rx);ctx.arcTo(W,H,W-rx,H,rx);
+  ctx.lineTo(rx,H);ctx.arcTo(0,H,0,H-rx,rx);
+  ctx.lineTo(0,rx);ctx.arcTo(0,0,rx,0,rx);
+  ctx.closePath();ctx.fill();
+  // Divider lines between octaves in multi-octave mode
+  if(songMultiOctave){
+    [87.31,174.6,349.2,698.5,1396.9].forEach(f=>{
+      const ty=H*(1-(f-freqMin)/(freqMax-freqMin));
+      ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(W,ty);
+      ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.stroke();
+    });
+  }
+  // Puck position
+  const t=Math.max(0,Math.min(1,(currentFreq-freqMin)/(freqMax-freqMin)));
+  const py=H*(1-t);
+  const pg=ctx.createRadialGradient(W/2,py,0,W/2,py,14);
+  pg.addColorStop(0,'rgba(255,255,255,.55)');
+  pg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=pg;ctx.beginPath();ctx.arc(W/2,py,14,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(W/2,py,7,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,py,2,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,.85)';ctx.fill();
+  // Tick marks at note positions
+  const noteTable=songMultiOctave?CHROMATIC_NOTES_MULTI:CHROMATIC_NOTES;
+  noteTable.forEach(n=>{
+    if(n.freq<freqMin||n.freq>freqMax) return;
+    const nt=Math.max(0,Math.min(1,(n.freq-freqMin)/(freqMax-freqMin)));
+    const ny=H*(1-nt);
+    ctx.beginPath();ctx.moveTo(0,ny);ctx.lineTo(5,ny);
+    ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W-5,ny);ctx.lineTo(W,ny);ctx.stroke();
+  });
+}
+// Map a frequency to its Color of Sound pitch-class color.
+// Normalizes to octave 4 to get the correct spectral hue, then adds
+// lightness variation so octave differences are visible on the canvas.
+function freqToCanvasColor(hz){
+  const pc4=normalizeToPitchClass4(hz);
+  const t=Math.max(0,Math.min(1,(pc4-349.2)/(698.5-349.2)));
+  const hue=t*273;
+  // In multi-octave mode, vary lightness with octave so the canvas
+  // visually reads darker at the bottom (low octaves) and lighter at top.
+  const octave=Math.log2(hz/pc4)+4; // continuous octave number
+  const l=songMultiOctave
+    ?Math.max(0.25,Math.min(0.75,0.5+(octave-4)*0.06)) // slight brightness variation
+    :0.5;
+  return hslToRgb(hue,1,l);
+}
+function gpFreqFromCanvasY(y){
+  const canvas=document.getElementById('gp-freq-canvas');
+  const H=canvas.getBoundingClientRect().height;
+  const{min:freqMin,max:freqMax}=gpFreqRange();
+  const t=1-(Math.max(0,Math.min(H,y))/H);
+  return freqMin+(freqMax-freqMin)*t;
+}document.getElementById('gp-freq-canvas').addEventListener('mousedown',e=>{
+  if(gradTi===null) return;
+  gpFreqCanvasDragging=true;beginGesture();
+  const rect=e.currentTarget.getBoundingClientRect();
+  setFrequency(gpFreqFromCanvasY(e.clientY-rect.top),false);
 });
-document.getElementById('gp-freq-slider').addEventListener('change',commitGesture);
+document.addEventListener('mousemove',e=>{
+  if(!gpFreqCanvasDragging) return;
+  const canvas=document.getElementById('gp-freq-canvas');
+  const rect=canvas.getBoundingClientRect();
+  setFrequency(gpFreqFromCanvasY(e.clientY-rect.top),false);
+});
+document.addEventListener('mouseup',()=>{if(gpFreqCanvasDragging){gpFreqCanvasDragging=false;commitGesture();}});
+document.getElementById('gp-freq-canvas').addEventListener('touchstart',e=>{
+  if(gradTi===null) return;
+  e.preventDefault();gpFreqCanvasDragging=true;beginGesture();
+  const rect=e.currentTarget.getBoundingClientRect();
+  setFrequency(gpFreqFromCanvasY(e.touches[0].clientY-rect.top),false);
+},{passive:false});
+document.getElementById('gp-freq-canvas').addEventListener('touchmove',e=>{
+  if(!gpFreqCanvasDragging) return;
+  e.preventDefault();
+  const rect=document.getElementById('gp-freq-canvas').getBoundingClientRect();
+  setFrequency(gpFreqFromCanvasY(e.touches[0].clientY-rect.top),false);
+},{passive:false});
+
+// Hz number field + spin buttons
 document.getElementById('gp-freq-num').addEventListener('change',e=>{
   const v=Math.max(170,Math.min(700,parseFloat(e.target.value)||440));
   pushHistory();setFrequency(v,false);
 });
+const HZ_STEP=1;
+document.getElementById('gp-hz-up').addEventListener('click',()=>{
+  if(gradTi===null) return;
+  pushHistory();
+  const cur=parseFloat(document.getElementById('gp-freq-num').value)||440;
+  setFrequency(Math.min(700,cur+HZ_STEP),false);
+});
+document.getElementById('gp-hz-dn').addEventListener('click',()=>{
+  if(gradTi===null) return;
+  pushHistory();
+  const cur=parseFloat(document.getElementById('gp-freq-num').value)||440;
+  setFrequency(Math.max(170,cur-HZ_STEP),false);
+});
+
+// ── Note display ──────────────────────────────────────────────────────────
+// Shows the two bounding chromatic notes with dots between; a gold indicator
+// floats to show where the current frequency sits between them.
+const NUM_DOTS=4; // dots between the two note names
+function renderNoteDisplay(freq){
+  const row=document.getElementById('gp-note-row');
+  const ind=document.getElementById('gp-note-indicator');
+  if(!row||!ind) return;
+  const{lo,hi,t}=freqToNote(freq);
+  row.innerHTML='';
+  if(!lo&&!hi){row.textContent='—';return;}
+  const loNode=hi?lo:null,hiNode=hi;
+  // Build: [lo name] [dot]×NUM_DOTS [hi name]
+  // We need positions for the indicator: track pixel offsets of each segment
+  const items=[]; // {el, frac} — frac=0 at lo, 1 at hi
+  const makeName=(n,frac)=>{
+    const span=document.createElement('span');
+    span.className='gp-note-name';
+    span.textContent=noteLabel(n);
+    span.addEventListener('click',()=>{
+      if(gradTi===null) return;
+      pushHistory();setFrequency(n.freq,false);
+    });
+    items.push({el:span,frac});
+    row.appendChild(span);
+  };
+  const makeDot=(frac,targetFreq)=>{
+    const dot=document.createElement('div');
+    dot.className='gp-note-dot';
+    // Mark the one closest to current t as active
+    const distToT=Math.abs(frac-t);
+    dot.title=`${targetFreq.toFixed(1)} Hz`;
+    dot.addEventListener('click',()=>{
+      if(gradTi===null) return;
+      pushHistory();setFrequency(targetFreq,false);
+    });
+    items.push({el:dot,frac});
+    row.appendChild(dot);
+    return dot;
+  };
+  if(loNode) makeName(loNode,0);
+  if(loNode&&hiNode){
+    const loF=loNode.freq,hiF=hiNode.freq;
+    for(let i=1;i<=NUM_DOTS;i++){
+      const frac=i/(NUM_DOTS+1);
+      const f=loF+(hiF-loF)*frac;
+      makeDot(frac,f);
+    }
+  }
+  if(hiNode) makeName(hiNode,1);
+  // After DOM paint, position the indicator
+  requestAnimationFrame(()=>{
+    const rowRect=row.getBoundingClientRect();
+    if(!rowRect.width) return;
+    // Find pixel positions of left and right anchors
+    const firstEl=items[0]?.el,lastEl=items[items.length-1]?.el;
+    if(!firstEl||!lastEl) return;
+    const firstR=firstEl.getBoundingClientRect();
+    const lastR=lastEl.getBoundingClientRect();
+    const pxLeft=firstR.left+firstR.width/2-rowRect.left;
+    const pxRight=lastR.left+lastR.width/2-rowRect.left;
+    const pxRange=pxRight-pxLeft;
+    // Indicator: width=24px centered at current t position, clamped inside range
+    const indW=22;
+    const center=pxLeft+t*pxRange;
+    const indLeft=Math.max(0,Math.min(rowRect.width-indW,center-indW/2));
+    ind.style.left=indLeft+'px';
+    ind.style.width=indW+'px';
+    // Highlight the dot whose frac is nearest t
+    items.forEach(it=>{
+      if(it.el.classList.contains('gp-note-dot')){
+        const close=Math.abs(it.frac-t)<0.5/(NUM_DOTS+1);
+        it.el.classList.toggle('active',close);
+      }
+    });
+  });
+}
 
 // CMYK — direct, since it's just a different coordinate system for the same RGB.
 function readCMYKFields(){
@@ -2647,13 +2998,13 @@ function updateAddTrackButton(){
 // ════════════════════════════════════════════════════════
 // SAVE / LOAD
 // ════════════════════════════════════════════════════════
-const SAVE_KEY='trico_seq_v8';
+const SAVE_KEY='trico_seq_v9';
 function saveState(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,channels,patterns,activePatternIndex,currentSongId,currentSongName}));}catch(e){}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,channels,patterns,activePatternIndex,currentSongId,currentSongName,songMultiOctave}));}catch(e){}
 }
 function loadState(){
   try{
-    const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('trico_seq_v7');
+    const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('trico_seq_v8')||localStorage.getItem('trico_seq_v7');
     if(raw){
       const d=JSON.parse(raw);
       bpm=d.bpm||120;
@@ -2662,10 +3013,12 @@ function loadState(){
       activePatternIndex=d.activePatternIndex||0;
       currentSongId=d.currentSongId||null;
       currentSongName=d.currentSongName||'';
+      songMultiOctave=d.songMultiOctave||false;
       if(!patterns.length){channels=[];patterns=[newPattern('Pattern 1',16,[])];activePatternIndex=0;}
       document.getElementById('bpm-val').textContent=bpm;
       syncStepPresetUI();
       updateSongNameDisplay();
+      updateOctaveModeBtn();
       return true;
     }
     // Legacy formats (pre channel/pattern split)
@@ -2675,9 +3028,11 @@ function loadState(){
     bpm=d.bpm||120;
     const migrated=migrateFlatTracks(d.tracks||[],d.stepCount||16);
     channels=migrated.channels;patterns=migrated.patterns;activePatternIndex=0;
+    songMultiOctave=false;
     document.getElementById('bpm-val').textContent=bpm;
     syncStepPresetUI();
     updateSongNameDisplay();
+    updateOctaveModeBtn();
     return true;
   }catch(e){return false;}
 }
@@ -2692,7 +3047,9 @@ async function init(){
     channels=[newChannel(),newChannel(),newChannel(),newChannel()];
     patterns=[newPattern('Pattern 1',16,channels)];
     activePatternIndex=0;
+    songMultiOctave=false;
   }
+  updateOctaveModeBtn();
   buildCircleLayout();
   render();
 }
