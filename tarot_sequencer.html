@@ -54,44 +54,73 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 #transport-sub .tb:hover{opacity:1;}
 .play-mode-pattern{border-color:rgba(201,169,110,.2);color:rgba(201,169,110,.5);}
 .play-mode-song{border-color:rgba(140,255,180,.45);color:rgba(140,255,180,.85);background:rgba(100,200,130,.07);}
-/* Order list panel */
-#order-list-panel{background:rgba(6,4,14,.97);border-bottom:1px solid var(--border);}
-#order-list-panel.ol-hidden{display:none;}
-#ol-head{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid rgba(201,169,110,.07);}
-#ol-add-row{display:flex;align-items:center;gap:7px;flex:1;overflow-x:auto;min-width:0;}
-.ol-add-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.15em;color:rgba(201,169,110,.3);flex-shrink:0;}
-#ol-add-chips{display:flex;gap:5px;overflow-x:auto;}
-.ol-add-chip{font-family:'Cinzel',serif;font-size:10px;padding:3px 10px;background:rgba(0,0,0,.4);border:1px solid rgba(201,169,110,.2);color:rgba(201,169,110,.55);border-radius:3px;cursor:pointer;white-space:nowrap;transition:all .14s;}
-.ol-add-chip:hover{border-color:var(--gold);color:var(--gold);background:var(--gf);}
+/* ── Timeline / Arrangement View ─────────────────────────────────────── */
+#timeline-panel{background:rgba(6,4,14,.97);border-top:3px solid rgba(201,169,110,.08);border-bottom:3px solid rgba(201,169,110,.08);margin:5px 0;}
+#timeline-panel.tl-hidden{display:none;}
+#tl-header{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid rgba(201,169,110,.07);flex-wrap:wrap;}
+#tl-zoom-group{display:flex;align-items:center;gap:4px;}
+#tl-time-mode{font-size:8px;letter-spacing:.12em;}
+#tl-add-row{display:flex;align-items:center;gap:7px;flex:1;overflow-x:auto;min-width:0;}
+#tl-add-chips{display:flex;gap:5px;}
+.tl-add-chip{font-family:'Cinzel',serif;font-size:10px;padding:3px 10px;background:rgba(0,0,0,.4);border:1px solid rgba(201,169,110,.2);color:rgba(201,169,110,.55);border-radius:3px;cursor:pointer;white-space:nowrap;transition:all .14s;}
+.tl-add-chip:hover{border-color:var(--gold);color:var(--gold);background:var(--gf);}
+/* Scroll container */
+#tl-scroll-wrap{overflow-x:auto;overflow-y:hidden;}
+#tl-scroll-wrap::-webkit-scrollbar{height:5px;}
+#tl-scroll-wrap::-webkit-scrollbar-thumb{background:rgba(201,169,110,.2);border-radius:3px;}
+#tl-inner{position:relative;min-width:100%;display:flex;flex-direction:column;}
+/* Ruler */
+#tl-ruler{height:22px;position:relative;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(201,169,110,.1);cursor:pointer;flex-shrink:0;}
+.tl-ruler-tick{position:absolute;top:0;width:1px;background:rgba(201,169,110,.18);height:8px;}
+.tl-ruler-tick.bar{background:rgba(201,169,110,.4);height:14px;}
+.tl-ruler-label{position:absolute;top:6px;font-family:'Cinzel',serif;font-size:7px;color:rgba(201,169,110,.5);transform:translateX(-50%);white-space:nowrap;pointer-events:none;}
+/* Track area */
+#tl-track{position:relative;height:56px;background:rgba(0,0,0,.25);border-bottom:1px solid rgba(201,169,110,.06);}
+#tl-clips{position:absolute;top:4px;left:0;height:48px;display:flex;gap:0;}
+/* Clips */
+.tl-clip{position:relative;height:48px;border-radius:3px;display:flex;overflow:hidden;flex-shrink:0;cursor:pointer;}
+.tl-clip:hover{filter:brightness(1.15);}
+.tl-clip.tl-active{outline:2px solid rgba(140,255,180,.9);outline-offset:-2px;filter:brightness(1.6);box-shadow:0 0 12px rgba(140,255,180,.4);}
+/* Each repeat block inside the clip */
+.tl-rep{height:100%;display:flex;flex-direction:column;justify-content:center;border-right:1px solid rgba(0,0,0,.3);flex-shrink:0;overflow:hidden;padding:4px 6px;box-sizing:border-box;}
+.tl-rep:last-child{border-right:none;}
+.tl-rep.tl-rep-main{opacity:1;}
+.tl-rep.tl-rep-ghost{opacity:0.45;cursor:context-menu;}
+.tl-rep.tl-rep-ghost:hover{opacity:0.7;}
+.tl-rep-num{font-family:'Cinzel',serif;font-size:8px;color:rgba(255,255,255,.5);}
+.tl-rep-name{font-family:'Cinzel',serif;font-size:10px;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Playhead */
+#tl-playhead{position:absolute;top:0;left:0;width:2px;pointer-events:none;z-index:20;transform:translateX(0);}
+#tl-playhead-head{width:14px;height:12px;background:rgba(255,255,220,.95);clip-path:polygon(50% 100%,0 0,100% 0);margin-left:-6px;filter:drop-shadow(0 0 3px rgba(255,255,180,.8));}
+#tl-playhead-line{width:2px;height:78px;background:rgba(255,255,200,.75);margin-left:-1px;box-shadow:0 0 4px rgba(255,255,180,.5);}
+/* Clip stats popup */
+#clip-stats-popup{position:fixed;z-index:310;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:14px;box-shadow:0 16px 48px rgba(0,0,0,.95);display:none;min-width:240px;max-width:90vw;}
+#clip-stats-popup.show{display:block;}
+#csp-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+#csp-num{font-family:'Cinzel',serif;font-size:10px;color:rgba(255,255,255,.4);flex-shrink:0;}
+#csp-name-wrap{flex:1;}
+#csp-name{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);cursor:text;}
+#csp-name.editing{border-bottom:1px solid var(--gold);outline:none;}
+#csp-swatch{width:18px;height:18px;border-radius:3px;border:2px solid rgba(255,255,255,.2);cursor:pointer;flex-shrink:0;}
+.csp-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.csp-lbl{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.12em;color:rgba(201,169,110,.45);flex-shrink:0;}
+.csp-rep-wrap{display:flex;align-items:center;gap:4px;}
+.csp-rep-btn{width:22px;height:22px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:rgba(201,169,110,.7);cursor:pointer;border-radius:3px;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.csp-rep-btn:hover{border-color:var(--gold);color:var(--gold);}
+#csp-rep-val{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);min-width:28px;text-align:center;}
+.csp-num-input{width:52px;background:#0d0a1e;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',serif;font-size:12px;padding:3px 5px;border-radius:3px;text-align:center;}
+.csp-num-input:focus{outline:none;border-color:var(--gold);}
+#csp-opacity{flex:1;accent-color:var(--gold);}
+#csp-opacity-val{font-family:'Cinzel',serif;font-size:9px;color:var(--gold);min-width:30px;text-align:right;}
+/* Timeline ctx menu (break apart) */
+#tl-ctx-menu{position:fixed;z-index:320;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:120px;}
+#tl-ctx-menu.show{display:block;}
+/* Pattern chip colors */
+.pattern-chip{display:flex;flex-direction:column;align-items:flex-start;padding:6px 12px;border:1px solid rgba(201,169,110,.18);border-radius:4px;cursor:pointer;background:rgba(0,0,0,.3);transition:all .15s;flex-shrink:0;min-width:64px;}
+.pattern-chip-numrow{display:flex;align-items:center;gap:5px;width:100%;}
+.pattern-chip-num{font-family:'Cinzel',serif;font-size:8px;opacity:.5;flex-shrink:0;}
 .ol-loop-on{border-color:rgba(140,210,255,.3);color:rgba(140,210,255,.65);}
 .ol-loop-off{border-color:rgba(201,169,110,.15);color:rgba(201,169,110,.4);}
-/* Slots */
-#ol-slots{max-height:220px;overflow-y:auto;padding:5px 0;}
-#ol-slots::-webkit-scrollbar{width:5px;}
-#ol-slots::-webkit-scrollbar-thumb{background:rgba(201,169,110,.15);border-radius:3px;}
-.ol-slot{display:flex;align-items:center;gap:8px;padding:6px 14px;border-left:3px solid transparent;transition:background .15s,border-color .15s;cursor:default;}
-.ol-slot:hover{background:rgba(201,169,110,.04);}
-.ol-slot.playing{border-left-color:rgba(140,255,180,.6);background:rgba(100,200,130,.07);}
-.ol-slot.ol-dragging{opacity:.4;}
-.ol-slot.ol-drag-top{box-shadow:inset 0 2px 0 var(--gold);}
-.ol-slot.ol-drag-bottom{box-shadow:inset 0 -2px 0 var(--gold);}
-.ol-drag{cursor:grab;color:rgba(201,169,110,.28);font-size:13px;user-select:none;flex-shrink:0;}
-.ol-drag:hover{color:rgba(201,169,110,.6);}
-.ol-num{font-family:'Cinzel',serif;font-size:10px;color:rgba(201,169,110,.25);min-width:18px;flex-shrink:0;}
-.ol-pat-name{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);flex:1;min-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ol-rep-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0;}
-.ol-rep-btn{width:18px;height:18px;background:rgba(0,0,0,.4);border:1px solid var(--border);color:rgba(201,169,110,.55);cursor:pointer;border-radius:2px;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
-.ol-rep-btn:hover{border-color:var(--gold);color:var(--gold);}
-.ol-rep-val{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);min-width:28px;text-align:center;}
-.ol-tempo-wrap{flex-shrink:0;}
-.ol-tempo-btn{font-family:'Cinzel',serif;font-size:9.5px;background:transparent;border:1px solid rgba(201,169,110,.12);color:rgba(201,169,110,.35);padding:2px 6px;cursor:pointer;border-radius:2px;transition:all .14s;}
-.ol-tempo-btn:hover,.ol-tempo-btn.on{border-color:rgba(255,180,80,.4);color:rgba(255,180,80,.75);}
-.ol-tempo-input{width:52px;background:#0d0a1e;border:1px solid var(--gold);color:var(--text);font-family:'EB Garamond',serif;font-size:12px;padding:2px 4px;border-radius:2px;text-align:center;}
-.ol-del{width:20px;height:20px;background:transparent;border:1px solid rgba(220,100,100,.18);color:rgba(220,100,100,.45);cursor:pointer;border-radius:2px;font-size:10px;line-height:1;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;}
-.ol-del:hover{border-color:rgba(220,100,100,.7);color:rgba(220,130,130,.9);}
-.ol-empty{font-family:'EB Garamond',serif;font-size:13px;color:rgba(201,169,110,.28);padding:14px 20px;font-style:italic;}
-#ol-slot-ctx-menu{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:120px;}
-#ol-slot-ctx-menu.show{display:block;}
 #pattern-chips{display:flex;gap:6px;overflow-x:auto;flex:1;padding-bottom:2px;}
 #pattern-chips::-webkit-scrollbar{height:3px;}
 #pattern-chips::-webkit-scrollbar-thumb{background:rgba(201,169,110,.15);border-radius:2px;}
@@ -110,6 +139,12 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 #add-pattern-btn{flex-shrink:0;}
 #pattern-ctx-menu{position:fixed;z-index:300;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.95);display:none;min-width:130px;}
 #pattern-ctx-menu.show{display:block;}
+#pattern-header{display:flex;align-items:center;gap:8px;padding:5px 14px;background:rgba(6,4,14,.6);border-bottom:1px solid rgba(201,169,110,.1);}
+#ph-num{font-family:'Cinzel',serif;font-size:10px;color:rgba(201,169,110,.38);flex-shrink:0;}
+#ph-sep{font-family:'Cinzel',serif;font-size:12px;color:rgba(201,169,110,.2);flex-shrink:0;}
+#ph-name{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);flex-shrink:0;}
+#ph-meta{display:flex;gap:12px;margin-left:auto;}
+#ph-meta span{font-family:'Cinzel',serif;font-size:9px;color:rgba(201,169,110,.35);}
 #tracks-outer{overflow-x:auto;padding-bottom:220px;}
 #tracks-outer::-webkit-scrollbar{height:4px;}
 #tracks-outer::-webkit-scrollbar-thumb{background:rgba(201,169,110,.15);border-radius:2px;}
@@ -344,6 +379,17 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .lp-item-meta{font-size:9px;color:rgba(201,169,110,.4);margin-top:2px;}
 #lp-empty{color:rgba(201,169,110,.4);font-size:11px;padding:12px 4px;}
 
+#export-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:350;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.98);display:none;min-width:300px;max-width:92vw;}
+#export-popup.show{display:block;}
+#ep-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+#ep-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.22em;color:var(--gold);}
+#ep-info{font-family:'EB Garamond',serif;font-size:13px;color:rgba(230,222,245,.75);margin-bottom:14px;line-height:1.55;}
+#ep-format-row{display:flex;gap:10px;margin-bottom:10px;}
+.ep-fmt-btn{flex:1;justify-content:center;display:flex;align-items:center;gap:4px;padding:8px 12px;}
+.ep-hint{font-family:'EB Garamond',serif;font-size:10px;font-style:italic;opacity:.55;letter-spacing:0;}
+#ep-status{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.14em;color:rgba(201,169,110,.55);min-height:18px;margin-bottom:8px;}
+#ep-progress-wrap{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+#ep-progress-bar{height:100%;width:0%;background:linear-gradient(to right,rgba(201,169,110,.4),var(--gold));border-radius:2px;transition:width .3s;}
 #confirm-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:350;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.98);display:none;min-width:280px;max-width:90vw;}
 #confirm-modal.show{display:block;}
 #cm-message{font-family:'EB Garamond',serif;font-size:13px;color:rgba(230,222,245,.85);line-height:1.55;margin-bottom:18px;}
@@ -383,6 +429,7 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
     <div id="transport-main">
       <button id="play-btn" class="tb">▶ Play</button>
       <button id="stop-btn" class="tb">■ Stop</button>
+      <button id="rewind-btn" class="tb" title="Return to start (also: double-click Stop)">⏮</button>
     </div>
     <div id="transport-sub">
       <button id="play-mode-btn" class="tb play-mode-pattern" title="Pattern: loops current pattern. Click for Song mode.">◈ PATTERN</button>
@@ -414,6 +461,7 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   <button id="new-song-btn" class="tb">＋ New Song</button>
   <button id="save-btn" class="tb">💾 Save</button>
   <button id="load-btn" class="tb">📂 Load</button>
+  <button id="export-btn" class="tb">⬇ Export</button>
   <div class="sep"></div>
   <button id="octave-mode-btn" class="tb oct-mode-btn" title="Toggle between single-octave (F4–F5) and multi-octave (lightness = register)">◈ OCTAVE: SINGLE</button>
   <div id="bar-right">
@@ -443,10 +491,24 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   <div id="lp-list">Loading…</div>
 </div>
 
+<div id="export-popup">
+  <div id="ep-head">
+    <span id="ep-title">EXPORT</span>
+    <button id="ep-close" class="tb">Close</button>
+  </div>
+  <div id="ep-info"></div>
+  <div id="ep-format-row">
+    <button id="ep-wav" class="tb ep-fmt-btn">⬇ WAV &nbsp;<span class="ep-hint">lossless · large</span></button>
+    <button id="ep-mp3" class="tb ep-fmt-btn">⬇ MP3 &nbsp;<span class="ep-hint">192kbps · small</span></button>
+  </div>
+  <div id="ep-status"></div>
+  <div id="ep-progress-wrap"><div id="ep-progress-bar"></div></div>
+</div>
+
 <div id="confirm-modal">
   <div id="cm-message"></div>
   <div id="cm-buttons">
-    <button id="cm-ok" class="tb"></button>
+    <button id="cm-ok" class="tb">OK</button>
     <button id="cm-cancel" class="tb">Cancel</button>
   </div>
 </div>
@@ -469,22 +531,75 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
   <span class="ctl-lbl">PATTERN</span>
   <div id="pattern-chips"></div>
   <button id="add-pattern-btn" class="tb">+ New</button>
-  <button id="switch-mode-btn" class="tb switch-mode-queue" title="Click to toggle: Queue waits for loop end before switching; Instant switches mid-pattern">⌛ QUEUE</button>
+  <button id="switch-mode-btn" class="tb switch-mode-queue" title="Queue: waits for loop end. Instant: switches mid-pattern">⌛ QUEUE</button>
 </div>
 <div id="pattern-ctx-menu"></div>
 
-<div id="order-list-panel" class="ol-hidden">
-  <div id="ol-head">
-    <span class="ctl-lbl">ARRANGEMENT</span>
-    <div id="ol-add-row">
-      <span class="ol-add-lbl">ADD →</span>
-      <div id="ol-add-chips"></div>
+<div id="timeline-panel" class="tl-hidden">
+  <div id="tl-header">
+    <span class="ctl-lbl">TIMELINE</span>
+    <div id="tl-zoom-group">
+      <button id="tl-zoom-out" class="tb">−</button>
+      <span id="tl-zoom-val" class="ctl-val" style="min-width:28px">16</span>
+      <button id="tl-zoom-in" class="tb">+</button>
+    </div>
+    <button id="tl-time-mode" class="tb" title="Toggle steps / clock time">STEPS</button>
+    <div id="tl-add-row">
+      <span class="ctl-lbl">ADD →</span>
+      <div id="tl-add-chips"></div>
     </div>
   </div>
-  <div id="ol-slots"></div>
+  <div id="tl-scroll-wrap">
+    <div id="tl-inner">
+      <div id="tl-ruler"></div>
+      <div id="tl-track">
+        <div id="tl-clips"></div>
+      </div>
+      <div id="tl-playhead">
+        <div id="tl-playhead-head"></div>
+        <div id="tl-playhead-line"></div>
+      </div>
+    </div>
+  </div>
 </div>
-<div id="ol-slot-ctx-menu"></div>
 
+<div id="clip-stats-popup">
+  <div id="csp-head">
+    <span id="csp-num"></span>
+    <span id="csp-name-wrap"><span id="csp-name"></span></span>
+    <div id="csp-swatch"></div>
+    <button id="csp-close" class="tb">✕</button>
+  </div>
+  <div id="csp-body">
+    <div class="csp-row">
+      <span class="csp-lbl">REPEATS</span>
+      <div class="csp-rep-wrap">
+        <button class="csp-rep-btn" id="csp-rep-dn">−</button>
+        <span id="csp-rep-val">×1</span>
+        <button class="csp-rep-btn" id="csp-rep-up">+</button>
+      </div>
+    </div>
+    <div class="csp-row">
+      <span class="csp-lbl">TRIM START</span>
+      <input type="number" id="csp-trim-start" class="csp-num-input" min="0" step="1"/>
+      <span class="csp-lbl">END</span>
+      <input type="number" id="csp-trim-end" class="csp-num-input" min="1" step="1"/>
+    </div>
+    <div class="csp-row">
+      <span class="csp-lbl">BPM</span>
+      <input type="number" id="csp-bpm" class="csp-num-input" min="20" max="400" placeholder="master"/>
+    </div>
+    <div class="csp-row">
+      <span class="csp-lbl">COLOR OPACITY</span>
+      <input type="range" id="csp-opacity" min="0" max="100" value="100"/>
+      <span id="csp-opacity-val">100%</span>
+    </div>
+    <button id="csp-remove" class="tb" style="width:100%;margin-top:8px;border-color:rgba(220,100,100,.3);color:rgba(220,130,130,.8);">Remove from Timeline</button>
+  </div>
+</div>
+<div id="tl-ctx-menu"></div>
+
+<div id="pattern-header"><span id="ph-num"></span><span id="ph-sep">·</span><span id="ph-name"></span><div id="ph-meta"><span id="ph-steps"></span><span id="ph-bpm-disp"></span></div></div>
 <div id="tracks-outer">
   <div id="tracks-container"></div>
   <button id="add-track-row">+ Add Track</button>
@@ -840,7 +955,7 @@ async function saveSongNew(name,sortOrder){
   const res=await fetch(`${SB_URL}/rest/v1/sequences`,{
     method:'POST',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave,orderList,playMode,songLoop},sort_order:so})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave,arrangementClips,playMode,songLoop,patternCounter},sort_order:so})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -850,7 +965,7 @@ async function updateSong(id,name){
   const res=await fetch(`${SB_URL}/rest/v1/sequences?id=eq.${id}`,{
     method:'PATCH',
     headers:{...SB_HEADERS,'Prefer':'return=representation'},
-    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave,orderList,playMode,songLoop},updated_at:new Date().toISOString()})
+    body:JSON.stringify({name,bpm,step_count:patterns[activePatternIndex].stepCount,tracks:{channels,patterns,multiOctave:songMultiOctave,arrangementClips,playMode,songLoop,patternCounter},updated_at:new Date().toISOString()})
   });
   if(!res.ok) throw new Error(await sbErrorText(res));
   const rows=await res.json();
@@ -898,35 +1013,64 @@ async function duplicateSong(id){
 }
 
 
+function migrateOrderListToClips(oldList,pats){
+  // Migrate old orderList format [{patternIndex,repeats,tempo}] to arrangementClips
+  return(oldList||[]).map(s=>{
+    const pat=pats[s.patternIndex];
+    return{
+      id:'cl'+Date.now()+Math.random().toString(36).slice(2,5),
+      patternIndex:s.patternIndex,
+      repeatCount:s.repeats||1,
+      trimStart:0,
+      trimEnd:pat?pat.stepCount:16,
+      tempo:s.tempo||null,
+      opacity:100
+    };
+  });
+}
+function backfillPatternColors(pats){
+  // Assign color/number to patterns that predate the color system
+  let maxNum=0;
+  pats.forEach(p=>{if(p.number&&p.number>maxNum)maxNum=p.number;});
+  pats.forEach((p,i)=>{
+    if(!p.number){p.number=++maxNum;}
+    if(!p.color){p.color=nextPatternColor(p.number);}
+  });
+  patternCounter=maxNum;
+}
 function applyLoadedSong(row){
   pushHistory();
   bpm=row.bpm||120;
   if(Array.isArray(row.tracks)){
     const migrated=migrateFlatTracks(row.tracks,row.step_count||16);
     channels=migrated.channels;patterns=migrated.patterns;
-    songMultiOctave=false;orderList=[];playMode='pattern';songLoop=true;
+    songMultiOctave=false;arrangementClips=[];playMode='pattern';songLoop=true;
   } else if(row.tracks&&row.tracks.channels&&row.tracks.patterns){
     channels=row.tracks.channels;patterns=row.tracks.patterns;
     songMultiOctave=row.tracks.multiOctave||false;
-    orderList=row.tracks.orderList||[];
+    // Migrate orderList → arrangementClips if needed
+    if(row.tracks.arrangementClips) arrangementClips=row.tracks.arrangementClips;
+    else if(row.tracks.orderList) arrangementClips=migrateOrderListToClips(row.tracks.orderList,patterns);
+    else arrangementClips=[];
     playMode=row.tracks.playMode||'pattern';
     songLoop=row.tracks.songLoop!==undefined?row.tracks.songLoop:true;
+    patternCounter=row.tracks.patternCounter||0;
   } else {
     channels=[];patterns=[newPattern('Pattern 1',16,[])];
-    songMultiOctave=false;orderList=[];playMode='pattern';songLoop=true;
+    songMultiOctave=false;arrangementClips=[];playMode='pattern';songLoop=true;
   }
-  activePatternIndex=0;
+  backfillPatternColors(patterns);
+  activePatternIndex=0;timelinePos=0;timelineVisualPos=0;
   document.getElementById('bpm-val').textContent=bpm;
   syncStepPresetUI();updateOctaveModeBtn();
-  // Restore play-mode UI
   const pmBtn=document.getElementById('play-mode-btn');
-  const panel=document.getElementById('order-list-panel');
+  const panel=document.getElementById('timeline-panel');
   if(playMode==='song'){
     pmBtn.textContent='◉ SONG';pmBtn.className='tb play-mode-song';
-    panel.classList.remove('ol-hidden');
+    panel.classList.remove('tl-hidden');
   } else {
     pmBtn.textContent='◈ PATTERN';pmBtn.className='tb play-mode-pattern';
-    panel.classList.add('ol-hidden');
+    panel.classList.add('tl-hidden');
   }
   const loopBtn=document.getElementById('song-loop-btn');
   loopBtn.textContent=songLoop?'↻ LOOP':'■ END';
@@ -946,6 +1090,206 @@ function openSavePopup(){
   setTimeout(()=>document.getElementById('sp-name').focus(),50);
 }
 function closeSavePopup(){savePopup.classList.remove('show');}
+// ════════════════════════════════════════════════════════
+// AUDIO EXPORT (WAV + MP3 via OfflineAudioContext)
+// ════════════════════════════════════════════════════════
+
+// ── WAV encoding (pure JS, no library) ──────────────────────────────────
+function audioBufferToWav(buffer){
+  const numCh=buffer.numberOfChannels,sr=buffer.sampleRate,len=buffer.length;
+  const dataSize=len*numCh*2; // 16-bit samples
+  const ab=new ArrayBuffer(44+dataSize);const v=new DataView(ab);
+  const wr=(off,s)=>{for(let i=0;i<s.length;i++) v.setUint8(off+i,s.charCodeAt(i));};
+  wr(0,'RIFF');v.setUint32(4,36+dataSize,true);wr(8,'WAVE');wr(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,numCh,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*numCh*2,true);
+  v.setUint16(32,numCh*2,true);v.setUint16(34,16,true);wr(36,'data');
+  v.setUint32(40,dataSize,true);
+  const L=buffer.getChannelData(0);
+  const R=numCh>1?buffer.getChannelData(1):L;
+  let off=44;
+  for(let i=0;i<len;i++){
+    v.setInt16(off,Math.max(-1,Math.min(1,L[i]))*0x7FFF,true);off+=2;
+    v.setInt16(off,Math.max(-1,Math.min(1,R[i]))*0x7FFF,true);off+=2;
+  }
+  return new Blob([ab],{type:'audio/wav'});
+}
+
+// ── MP3 encoding (lamejs from CDN) ───────────────────────────────────────
+let _lameLoaded=false;
+function loadLamejs(){
+  return new Promise((res,rej)=>{
+    if(_lameLoaded||window.lamejs){_lameLoaded=true;res();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+    s.onload=()=>{_lameLoaded=true;res();};
+    s.onerror=()=>rej(new Error('Could not load lamejs encoder from CDN'));
+    document.head.appendChild(s);
+  });
+}
+async function audioBufferToMp3(buffer,onProgress){
+  await loadLamejs();
+  const numCh=buffer.numberOfChannels,sr=buffer.sampleRate;
+  const enc=new lamejs.Mp3Encoder(numCh,sr,192);
+  const L=buffer.getChannelData(0);
+  const R=numCh>1?buffer.getChannelData(1):L;
+  const toI16=ch=>{const a=new Int16Array(ch.length);for(let i=0;i<ch.length;i++) a[i]=Math.max(-32768,Math.min(32767,Math.round(ch[i]*32767)));return a;};
+  const lI=toI16(L),rI=toI16(R);
+  const CHUNK=1152,chunks=[];
+  for(let i=0;i<lI.length;i+=CHUNK){
+    chunks.push(enc.encodeBuffer(lI.subarray(i,i+CHUNK),rI.subarray(i,i+CHUNK)));
+    if(onProgress) onProgress(Math.min(0.99,i/lI.length));
+  }
+  chunks.push(enc.flush());
+  return new Blob(chunks,{type:'audio/mpeg'});
+}
+
+// ── Download helper ───────────────────────────────────────────────────────
+function triggerDownload(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
+}
+
+// ── Export slot list: what to render ────────────────────────────────────
+function buildExportSlots(){
+  if(playMode==='song'&&arrangementClips.length>0){
+    return arrangementClips.map(c=>({patternIndex:c.patternIndex,repeats:c.repeatCount,tempo:c.tempo}));
+  }
+  return[{patternIndex:activePatternIndex,repeats:4,tempo:null}];
+}
+function calcExportDuration(slots){
+  const TAIL=1.2;
+  let total=TAIL,curBpm=bpm;
+  for(const sl of slots){
+    const pat=patterns[sl.patternIndex];if(!pat) continue;
+    const b=sl.tempo||curBpm;
+    total+=pat.stepCount*(60/b/4)*sl.repeats;
+    curBpm=sl.tempo||curBpm;
+  }
+  return total;
+}
+function fmtDuration(s){
+  const m=Math.floor(s/60),sec=Math.round(s%60);
+  return m>0?`${m}m ${sec}s`:`${sec}s`;
+}
+function fmtSize(seconds,bitsPerSecond){
+  return((seconds*bitsPerSecond/8)/1e6).toFixed(1)+'MB';
+}
+
+// ── Core render: run scheduler into OfflineAudioContext ─────────────────
+async function renderToBuffer(onProgress){
+  const slots=buildExportSlots();
+  const totalDur=calcExportDuration(slots);
+  const SR=44100;
+  const offCtx=new OfflineAudioContext(2,Math.ceil(totalDur*SR),SR);
+  exportCtx=offCtx;
+
+  // Save live state
+  const savedActivePattern=activePatternIndex;
+  const savedBpm=bpm;
+
+  let currentTime=0.05;
+  for(const slot of slots){
+    const pat=patterns[slot.patternIndex];if(!pat) continue;
+    activePatternIndex=slot.patternIndex;
+    bpm=slot.tempo||savedBpm;
+    const stepDur=60/bpm/4;
+    for(let rep=0;rep<slot.repeats;rep++){
+      for(let step=0;step<pat.stepCount;step++){
+        fireStep(step,currentTime);
+        currentTime+=stepDur;
+      }
+    }
+    savedBpm!==bpm&&(savedBpm); // keep linter happy
+  }
+
+  // Restore live state (before render completes, safe because scheduling is done)
+  activePatternIndex=savedActivePattern;
+  bpm=savedBpm;
+
+  // Start offline render
+  const renderPromise=offCtx.startRendering();
+  exportCtx=null;
+
+  // Animate progress while rendering (OfflineAudioContext gives no interim events)
+  if(onProgress){
+    const start=Date.now();const estimated=totalDur*1000*0.3; // ~0.3× realtime
+    const tick=setInterval(()=>{
+      const elapsed=Date.now()-start;
+      onProgress(Math.min(0.93,elapsed/estimated)); // cap at 93% until done
+    },80);
+    const buf=await renderPromise;
+    clearInterval(tick);onProgress(1);
+    return buf;
+  }
+  return await renderPromise;
+}
+
+// ── Export popup UI ───────────────────────────────────────────────────────
+const exportPopup=document.getElementById('export-popup');
+function openExportPopup(){
+  const slots=buildExportSlots();
+  const dur=calcExportDuration(slots);
+  const wavMB=fmtSize(dur,44100*2*16);
+  const mp3MB=fmtSize(dur,192000);
+  const modeLabel=playMode==='song'&&arrangementClips.length>0
+    ?`Song mode · ${slots.length} slot${slots.length!==1?'s':''}`
+    :`Pattern mode · current pattern × 4 loops`;
+  document.getElementById('ep-info').innerHTML=
+    `<strong>${modeLabel}</strong><br>Duration: ~${fmtDuration(dur)}&emsp;WAV ~${wavMB}&emsp;MP3 ~${mp3MB}`;
+  document.getElementById('ep-status').textContent='';
+  document.getElementById('ep-progress-bar').style.width='0%';
+  document.getElementById('ep-wav').disabled=false;
+  document.getElementById('ep-mp3').disabled=false;
+  exportPopup.classList.add('show');
+}
+function closeExportPopup(){exportPopup.classList.remove('show');}
+
+async function runExport(format){
+  const wavBtn=document.getElementById('ep-wav');
+  const mp3Btn=document.getElementById('ep-mp3');
+  const statusEl=document.getElementById('ep-status');
+  const barEl=document.getElementById('ep-progress-bar');
+  wavBtn.disabled=true;mp3Btn.disabled=true;
+  const songName=(currentSongName||'trickno-export').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+
+  try{
+    statusEl.textContent='RENDERING AUDIO…';
+    const buffer=await renderToBuffer(t=>{barEl.style.width=(t*100).toFixed(1)+'%';});
+
+    if(format==='wav'){
+      statusEl.textContent='ENCODING WAV…';
+      const blob=audioBufferToWav(buffer);
+      triggerDownload(blob,songName+'.wav');
+    } else {
+      statusEl.textContent='ENCODING MP3…';
+      const blob=await audioBufferToMp3(buffer,t=>{barEl.style.width=(50+t*50).toFixed(1)+'%';});
+      triggerDownload(blob,songName+'.mp3');
+    }
+
+    barEl.style.width='100%';
+    statusEl.textContent='DONE — downloading…';
+    setTimeout(()=>{
+      closeExportPopup();
+      barEl.style.width='0%';
+    },1500);
+  } catch(err){
+    statusEl.textContent='ERROR: '+err.message;
+    wavBtn.disabled=false;mp3Btn.disabled=false;
+    console.error('Export error:',err);
+  }
+}
+
+document.getElementById('export-btn').addEventListener('click',openExportPopup);
+document.getElementById('ep-close').addEventListener('click',closeExportPopup);
+document.getElementById('ep-wav').addEventListener('click',()=>runExport('wav'));
+document.getElementById('ep-mp3').addEventListener('click',()=>runExport('mp3'));
+document.addEventListener('mousedown',e=>{
+  if(exportPopup.classList.contains('show')&&!exportPopup.contains(e.target)&&e.target.id!=='export-btn') closeExportPopup();
+});
+
 document.getElementById('save-btn').addEventListener('click',openSavePopup);
 document.getElementById('sp-close').addEventListener('click',closeSavePopup);
 document.getElementById('sp-save-new').addEventListener('click',async()=>{
@@ -995,11 +1339,11 @@ function clearForNewSong(){
   patterns=[newPattern('Pattern 1',16,channels)];
   activePatternIndex=0;
   currentSongId=null;currentSongName='';
-  songMultiOctave=true;orderList=[];playMode='pattern';songLoop=true;
+  songMultiOctave=true;arrangementClips=[];playMode='pattern';songLoop=true;patternCounter=0;
   updateOctaveModeBtn();updateSongNameDisplay();
   document.getElementById('play-mode-btn').textContent='◈ PATTERN';
   document.getElementById('play-mode-btn').className='tb play-mode-pattern';
-  document.getElementById('order-list-panel').classList.add('ol-hidden');
+  document.getElementById('timeline-panel').classList.add('tl-hidden');
   document.getElementById('bpm-val').textContent=bpm;
   syncStepPresetUI();
   render();saveState();
@@ -1194,8 +1538,10 @@ document.addEventListener('mousedown',e=>{
 // AUDIO
 // ════════════════════════════════════════════════════════
 let audioCtx=null,previewOsc=null,previewGain=null;
-let pianoVol=0.5; // universal preview volume — shared across all channels, not saved with song
+let pianoVol=0.5;
+let exportCtx=null; // set during OfflineAudioContext rendering; getCtx() returns it when set
 function getCtx(){
+  if(exportCtx) return exportCtx;
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
@@ -1481,14 +1827,21 @@ function stopPreview(){
 let bpm=120,playing=false,schedStep=0,nextNoteTime=0,schedTimer=null,rafHandle=null;
 let needsRender=false; // set by scheduler when pattern switches; picked up by rafLoop
 let needsStop=false;   // set by scheduler when song arrangement ends
+let lastScheduledPatternIndex=-1; // detects clip changes to trigger grid re-render
 let pendingPatternIndex=null; // queued pattern, applied at loop boundary
 let patternSwitchMode='queue'; // 'queue' = wait for loop end; 'instant' = switch mid-pattern
-// ── Song / Order List state ──────────────────────────────────────────────
-let orderList=[];      // [{id,patternIndex,repeats,tempo}]
-let playMode='pattern';// 'pattern' | 'song'
-let orderPos=0;        // current slot index in orderList
-let orderRepeat=0;     // loops completed in current slot (resets per slot)
-let songLoop=true;     // true=restart arrangement at end; false=stop
+// ── Song / Arrangement state ─────────────────────────────────────────────
+let arrangementClips=[];  // [{id,patternIndex,repeatCount,trimStart,trimEnd,tempo,opacity}]
+let playMode='pattern';   // 'pattern' | 'song'
+let songLoop=true;        // loop arrangement vs stop at end
+let timelinePos=0;        // absolute step position on the timeline (song mode)
+let timelineVisualPos=0;  // smoothly interpolated for playhead rendering
+let lastStepFiredTime=0;
+let songPlayStartAudioTime=0;  // audio time when song mode play began
+let songPlayStartTimelinePos=0; // timeline position when play began
+let tlPxPerStep=6;        // pixels per step (zoom level — default: 6)
+let tlTimeMode='steps';   // 'steps' | 'clock'
+let tlSelectedClipIdx=null; // index of clip whose stats popup is open
 const MAX_TRACKS=16;
 const stepQueue=[];
 // CHANNELS = persistent instrument definitions (suit, gradient, pan, vol, octave, mute/solo).
@@ -1516,11 +1869,38 @@ function newChannelData(suit,stepCount){
     drumSteps:isDrum?DRUM_SLOTS.map(()=>new Array(stepCount).fill(false)):null
   };
 }
+// ── Pattern color system ────────────────────────────────────────────────
+// Colors are assigned using the golden-angle hue distribution so successive
+// patterns always have maximally different hues.
+let patternCounter=0; // increments on every pattern creation, never reused
+function nextPatternColor(idx){
+  const hue=(idx*137.508)%360; // golden angle
+  return{hue,border:`hsl(${hue},65%,55%)`,bg:`hsl(${hue},18%,10%)`};
+}
+function patternBorderCss(p){return p.color?p.color.border:'rgba(201,169,110,.18)';}
+function patternBgCss(p,opacity=1){
+  if(!p.color) return'rgba(0,0,0,.3)';
+  const h=p.color.hue,a=opacity;
+  return`hsla(${h},18%,${8+opacity*4}%,${a})`;
+}
+// Duplicate naming: "Intro" → "Intro-A" → "Intro-B" → "Intro-Z" → "Intro-A2"
+function getDuplicateName(name){
+  const m=name.match(/^(.+?)-([A-Z])(\d*)$/);
+  if(m){
+    const base=m[1],letter=m[2],num=m[3]?parseInt(m[3]):0;
+    if(letter==='Z') return`${base}-A${num+1}`;
+    return`${base}-${String.fromCharCode(letter.charCodeAt(0)+1)}${num||''}`;
+  }
+  return`${name}-A`;
+}
+
 function newPattern(name,stepCount,chs){
+  const num=++patternCounter;
+  const color=nextPatternColor(num);
   return{
     id:'pt'+Date.now()+Math.random().toString(36).slice(2,4),
-    name,stepCount,
-    tempo:null, // forward-looking: null = inherit master tempo curve; set = anchor point
+    name,stepCount,number:num,color,
+    tempo:null,
     channelData:chs.map(ch=>newChannelData(ch.suit,stepCount))
   };
 }
@@ -1607,7 +1987,7 @@ document.addEventListener('keydown',e=>{
   else if((e.key.toLowerCase()==='z'&&e.shiftKey)||e.key.toLowerCase()==='y'){e.preventDefault();redo();}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeSavePopup();closeLoadPopup();closePatternCtxMenu();closeNewSongModal();closeSongCtxMenu();closeConfirmModal();}
+  if(e.key==='Escape'){closeSavePopup();closeLoadPopup();closePatternCtxMenu();closeNewSongModal();closeSongCtxMenu();closeConfirmModal();closeExportPopup();}
   if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='sp-name'){
     document.getElementById(currentSongId?'sp-update':'sp-save-new').click();
   }
@@ -1741,14 +2121,116 @@ document.addEventListener('contextmenu',e=>{
 // ════════════════════════════════════════════════════════
 const LOOKAHEAD_MS=25,SCHEDULE_AHEAD_S=0.1,NOTE_FACTOR=0.75;
 
+// ── Timeline helpers ─────────────────────────────────────────────────────
+function newClip(patternIdx){
+  const pat=patterns[patternIdx];
+  return{
+    id:'cl'+Date.now()+Math.random().toString(36).slice(2,5),
+    patternIndex:patternIdx,
+    repeatCount:1,
+    trimStart:0,
+    trimEnd:pat?pat.stepCount:16,
+    tempo:null,
+    opacity:100
+  };
+}
+function clipEffectiveLen(clip){
+  const pat=patterns[clip.patternIndex];
+  if(!pat) return 0;
+  const sc=pat.stepCount||16; // guard: legacy patterns may not have stepCount
+  const end=clip.trimEnd!=null?Math.min(clip.trimEnd,sc):sc;
+  const start=clip.trimStart||0;
+  return Math.max(1,Math.max(0,end-start));
+}
+function clipTotalLen(clip){ return clipEffectiveLen(clip)*clip.repeatCount; }
+function getTotalTimelineSteps(){
+  return arrangementClips.reduce((a,c)=>a+clipTotalLen(c),0);
+}
+function getClipAtStep(absStep){
+  let pos=0;
+  for(let i=0;i<arrangementClips.length;i++){
+    const clip=arrangementClips[i];
+    const len=clipTotalLen(clip);
+    if(absStep>=pos&&absStep<pos+len){
+      const localStep=absStep-pos;
+      const trimStart=clip.trimStart||0;
+      const effLen=clipEffectiveLen(clip);
+      const patStep=trimStart+(localStep%effLen);
+      const repIdx=Math.floor(localStep/effLen);
+      return{clip,clipIdx:i,localStep,patStep,repIdx};
+    }
+    pos+=len;
+  }
+  return null;
+}
+function stepsToClockStr(steps,currentBpm){
+  const secs=steps*(60/(currentBpm||bpm)/4);
+  const m=Math.floor(secs/60),s=Math.floor(secs%60),ms=Math.floor((secs%1)*10);
+  return`${m}:${String(s).padStart(2,'0')}.${ms}`;
+}
+
+// ── Clip management ──────────────────────────────────────────────────────
+function addClip(patternIdx){
+  pushHistory();arrangementClips.push(newClip(patternIdx));renderTimeline();saveState();
+}
+function removeClip(idx){
+  pushHistory();arrangementClips.splice(idx,1);
+  if(timelinePos>=getTotalTimelineSteps()) timelinePos=0;
+  closeClipStats();renderTimeline();saveState();
+}
+function setClipRepeat(idx,n){
+  arrangementClips[idx].repeatCount=Math.max(1,Math.min(99,n));renderTimeline();saveState();
+}
+function setClipTrimStart(idx,v){
+  const pat=patterns[arrangementClips[idx].patternIndex];
+  const max=(arrangementClips[idx].trimEnd||pat.stepCount)-1;
+  arrangementClips[idx].trimStart=Math.max(0,Math.min(max,v));
+  renderTimeline();saveState();
+}
+function setClipTrimEnd(idx,v){
+  const pat=patterns[arrangementClips[idx].patternIndex];
+  const min=(arrangementClips[idx].trimStart||0)+1;
+  arrangementClips[idx].trimEnd=Math.max(min,Math.min(pat.stepCount,v));
+  renderTimeline();saveState();
+}
+function setClipTempo(idx,t){arrangementClips[idx].tempo=(t&&t>=20&&t<=400)?t:null;renderTimeline();saveState();}
+function setClipOpacity(idx,v){arrangementClips[idx].opacity=Math.max(0,Math.min(100,v));renderTimeline();saveState();}
+function breakApartClip(clipIdx,repIdx){
+  // Splits the ghost repeat at repIdx into an independent copy
+  pushHistory();
+  const orig=arrangementClips[clipIdx];
+  const before={...orig,id:'cl'+Date.now()+'a',repeatCount:repIdx};
+  const broken={...orig,id:'cl'+Date.now()+'b',patternIndex:patterns.length,repeatCount:1};
+  const after={...orig,id:'cl'+Date.now()+'c',repeatCount:orig.repeatCount-repIdx-1};
+  // Create new pattern as copy of original
+  const srcPat=patterns[orig.patternIndex];
+  const newPat=JSON.parse(JSON.stringify(srcPat));
+  newPat.id='pt'+Date.now()+Math.random().toString(36).slice(2,4);
+  newPat.name=getDuplicateName(srcPat.name);
+  newPat.number=++patternCounter;
+  newPat.color=nextPatternColor(newPat.number);
+  patterns.push(newPat);
+  // Rebuild clips at this position
+  const newClips=[];
+  if(before.repeatCount>0) newClips.push(before);
+  newClips.push(broken);
+  if(after.repeatCount>0) newClips.push(after);
+  arrangementClips.splice(clipIdx,1,...newClips);
+  renderTimeline();saveState();
+}
+
 function startPlay(){
   const a=getCtx();playing=true;schedStep=0;nextNoteTime=a.currentTime+0.05;
-  if(playMode==='song'&&orderList.length>0){
-    orderPos=0;orderRepeat=0;
-    activePatternIndex=orderList[0].patternIndex;
-    if(orderList[0].tempo!=null){bpm=orderList[0].tempo;document.getElementById('bpm-val').textContent=bpm;}
-    syncStepPresetUI();
-    renderOrderList();
+  lastScheduledPatternIndex=-1; // force grid render on first clip
+  if(playMode==='song'&&arrangementClips.length>0){
+    // Start from timelinePos (stop-in-place) — don't reset unless at end
+    if(timelinePos>=getTotalTimelineSteps()) timelinePos=0;
+    const ci=getClipAtStep(timelinePos);
+    if(ci){activePatternIndex=ci.clip.patternIndex;}
+    lastStepFiredTime=a.currentTime;
+    songPlayStartAudioTime=a.currentTime+0.05; // when first step will fire
+    songPlayStartTimelinePos=timelinePos;
+    renderTimeline();
   }
   document.getElementById('play-btn').classList.add('playing');
   document.getElementById('play-btn').textContent='▶ Playing';
@@ -1756,69 +2238,103 @@ function startPlay(){
 }
 function stopPlay(){
   playing=false;clearTimeout(schedTimer);cancelAnimationFrame(rafHandle);stepQueue.length=0;
-  pendingPatternIndex=null;needsRender=false;needsStop=false;
+  pendingPatternIndex=null;needsRender=false;needsStop=false;songPlayStartAudioTime=0;
   document.querySelectorAll('.step-cell.ph,.step-cell.flash,.drum-cell.ph,.drum-cell.flash').forEach(el=>el.classList.remove('ph','flash'));
   document.getElementById('play-btn').classList.remove('playing');document.getElementById('play-btn').textContent='▶ Play';
   activeNotes=[];
-  renderPatternBar();
-  renderOrderList();
+  renderPatternBar();renderTimeline();
+  // timelinePos stays where we stopped (stop-in-place)
 }
+function rewindSong(){
+  timelinePos=0;timelineVisualPos=0;
+  if(playMode==='song'&&arrangementClips.length>0){
+    const ci=getClipAtStep(0);
+    if(ci) activePatternIndex=ci.clip.patternIndex;
+  }
+  renderTimeline();
+  if(!playing) schedStep=0;
+}
+
 function scheduler(){
   const a=getCtx();
   while(nextNoteTime<a.currentTime+SCHEDULE_AHEAD_S){
-    if(schedStep===0){
-      if(playMode==='song'&&orderList.length>0){
-        // Advance to next slot when current one has completed all its repeats
-        if(orderRepeat>=orderList[orderPos].repeats){
-          orderPos++;orderRepeat=0;
-          if(orderPos>=orderList.length){
-            if(songLoop){ orderPos=0; }
-            else { needsStop=true;needsRender=true;break; }
-          }
-          if(!needsStop){
-            activePatternIndex=orderList[orderPos].patternIndex;
-            const slotTempo=orderList[orderPos].tempo;
-            if(slotTempo!=null){ bpm=slotTempo; }
-            needsRender=true;
-          }
-        }
-        if(!needsStop) orderRepeat++;
-      } else if(pendingPatternIndex!==null){
-        // Pattern mode queue switch
-        activePatternIndex=pendingPatternIndex;
-        pendingPatternIndex=null;
-        syncStepPresetUI();
-        needsRender=true;
+    if(playMode==='song'&&arrangementClips.length>0){
+      const total=getTotalTimelineSteps();
+      if(timelinePos>=total){
+        if(songLoop){ timelinePos=0; }
+        else{ needsStop=true;needsRender=true;break; }
       }
+      const ci=getClipAtStep(timelinePos);
+      if(ci){
+        const{clip,patStep}=ci;
+        activePatternIndex=clip.patternIndex;
+        if(activePatternIndex!==lastScheduledPatternIndex){
+          lastScheduledPatternIndex=activePatternIndex;
+          needsRender=true; // triggers grid rebuild in rafLoop
+        }
+        const clipBpm=clip.tempo||bpm;
+        fireStep(patStep,nextNoteTime,clipBpm);
+        stepQueue.push({step:patStep,timelinePos,time:nextNoteTime,clipIdx:ci.clipIdx});
+        nextNoteTime+=(60/clipBpm/4);
+      } else {
+        nextNoteTime+=(60/bpm/4);
+      }
+      timelinePos++;
+    } else {
+      // Pattern mode — existing logic
+      if(schedStep===0&&pendingPatternIndex!==null){
+        activePatternIndex=pendingPatternIndex;pendingPatternIndex=null;
+        syncStepPresetUI();needsRender=true;
+      }
+      const sc=patterns[activePatternIndex].stepCount;
+      stepQueue.push({step:schedStep,timelinePos:schedStep,time:nextNoteTime,clipIdx:-1});
+      fireStep(schedStep,nextNoteTime);
+      nextNoteTime+=((60/bpm)/4);
+      schedStep=(schedStep+1)%sc;
     }
     if(needsStop) break;
-    const sc=patterns[activePatternIndex].stepCount;
-    stepQueue.push({step:schedStep,time:nextNoteTime});
-    fireStep(schedStep,nextNoteTime);
-    nextNoteTime+=((60/bpm)/4);
-    schedStep=(schedStep+1)%sc;
   }
   if(!needsStop) schedTimer=setTimeout(scheduler,LOOKAHEAD_MS);
 }
 function rafLoop(){
   if(!playing) return;
   if(needsStop){
-    needsStop=false;
-    stopPlay(); // sets playing=false, cancels next RAF
-    orderPos=0;orderRepeat=0;
-    render();
-    return;
+    needsStop=false;stopPlay();
+    timelinePos=0;timelineVisualPos=0;
+    render();return;
   }
   if(needsRender){
-    needsRender=false;
-    syncStepPresetUI();
-    renderPatternBar();
-    renderOrderList();
-    render();
+    needsRender=false;syncStepPresetUI();renderPatternBar();renderTimeline();render();
   }
   const now=audioCtx?audioCtx.currentTime:0;
   while(stepQueue.length&&stepQueue[0].time<=now){
-    const{step}=stepQueue.shift();updatePlayhead(step);
+    const item=stepQueue.shift();
+    updatePlayhead(item.step);
+    if(playMode==='song') timelineVisualPos=item.timelinePos;
+  }
+  // ── Smooth playhead: elapsed time from song start (robust, no stepQueue dependency) ──
+  if(playMode==='song'&&playing){
+    // Use elapsed time from play start for smooth, reliable playhead motion.
+    // If songPlayStartAudioTime somehow isn't set, anchor to now.
+    const anchor=songPlayStartAudioTime>0?songPlayStartAudioTime:now;
+    const elapsed=Math.max(0,now-anchor);
+    const stepDur=60/bpm/4;
+    const visualPos=songPlayStartTimelinePos+elapsed/stepDur;
+    const total=getTotalTimelineSteps();
+    timelineVisualPos=isNaN(total)||total===0?visualPos:Math.min(total,visualPos);
+    const phEl=document.getElementById('tl-playhead');
+    if(phEl) phEl.style.transform=`translateX(${Math.max(0,timelineVisualPos)*tlPxPerStep}px)`;
+    // Auto-scroll: keep playhead in view
+    const wrap=document.getElementById('tl-scroll-wrap');
+    if(wrap){
+      const px=timelineVisualPos*tlPxPerStep;
+      if(px>wrap.scrollLeft+wrap.clientWidth-80) wrap.scrollLeft=px-wrap.clientWidth*0.25;
+    }
+    // Highlight active clip in timeline
+    const activeClipInfo=getClipAtStep(Math.floor(timelineVisualPos));
+    document.querySelectorAll('.tl-clip').forEach((el,i)=>{
+      el.classList.toggle('tl-active',i===activeClipInfo?.clipIdx);
+    });
   }
   rafHandle=requestAnimationFrame(rafLoop);
 }
@@ -1837,9 +2353,10 @@ function getAudibleSuits(){
   });
   return suits;
 }
-function fireStep(step,t){
+function fireStep(step,t,clipBpm=null){
+  const effectiveBpm=clipBpm||bpm;
   const pat=patterns[activePatternIndex];
-  const dur=((60/bpm)/4)*NOTE_FACTOR;
+  const dur=((60/effectiveBpm)/4)*NOTE_FACTOR;
   const hasSolo=channels.some(ch=>ch.solo);
   channels.forEach((ch,ci)=>{
     if(!isChannelAudible(ch,hasSolo)) return;
@@ -1860,19 +2377,6 @@ function fireStep(step,t){
       }
     }
   });
-}
-function rafLoop(){
-  if(!playing) return;
-  if(needsRender){
-    needsRender=false;
-    renderPatternBar();
-    render(); // rebuilds step grid to show new pattern's note data
-  }
-  const now=audioCtx?audioCtx.currentTime:0;
-  while(stepQueue.length&&stepQueue[0].time<=now){
-    const{step}=stepQueue.shift();updatePlayhead(step);
-  }
-  rafHandle=requestAnimationFrame(rafLoop);
 }
 function updatePlayhead(step){
   document.querySelectorAll('.step-cell.ph,.drum-cell.ph').forEach(el=>el.classList.remove('ph'));
@@ -1954,9 +2458,20 @@ function flattenPattern(idx){
   render();saveState();
 }
 
+function updatePatternHeader(){
+  const pat=patterns[activePatternIndex];if(!pat) return;
+  const bg=pat.color?patternBgCss(pat,1):'rgba(6,4,14,.6)';
+  document.getElementById('pattern-header').style.background=bg;
+  document.getElementById('ph-num').textContent=String(pat.number||activePatternIndex+1).padStart(2,'0');
+  document.getElementById('ph-name').textContent=pat.name;
+  document.getElementById('ph-steps').textContent=pat.stepCount+' steps';
+  document.getElementById('ph-bpm-disp').textContent=bpm+' BPM';
+}
+
 function render(){
   renderPatternBar();
-  renderOrderList();
+  renderTimeline();
+  updatePatternHeader();
   const c=document.getElementById('tracks-container');
   c.innerHTML='';
   const hasSolo=channels.some(ch=>ch.solo);
@@ -1987,30 +2502,6 @@ function switchPattern(idx){
 }
 
 // ── Order list slot management ───────────────────────────────────────────
-function newSlot(patternIdx){
-  return{id:'sl'+Date.now()+Math.random().toString(36).slice(2,5),patternIndex:patternIdx,repeats:1,tempo:null};
-}
-function addSlot(patternIdx){
-  pushHistory();orderList.push(newSlot(patternIdx));renderOrderList();saveState();
-}
-function removeSlot(idx){
-  pushHistory();orderList.splice(idx,1);
-  if(orderPos>=orderList.length) orderPos=Math.max(0,orderList.length-1);
-  renderOrderList();saveState();
-}
-function setSlotRepeats(idx,n){
-  orderList[idx].repeats=Math.max(1,Math.min(99,n));renderOrderList();saveState();
-}
-function setSlotTempo(idx,t){
-  orderList[idx].tempo=(t&&t>=20&&t<=400)?t:null;renderOrderList();saveState();
-}
-function moveSlot(fromIdx,toIdx,before){
-  pushHistory();
-  const[moved]=orderList.splice(fromIdx,1);
-  const insertAt=before?(fromIdx<toIdx?toIdx-1:toIdx):(fromIdx<toIdx?toIdx:toIdx+1);
-  orderList.splice(Math.max(0,Math.min(orderList.length,insertAt)),0,moved);
-  renderOrderList();saveState();
-}
 function addPattern(){
   if(playing) stopPlay();
   pushHistory();
@@ -2026,11 +2517,12 @@ function duplicatePattern(idx){
   pushHistory();
   const clone=JSON.parse(JSON.stringify(patterns[idx]));
   clone.id='pt'+Date.now()+Math.random().toString(36).slice(2,4);
-  clone.name=patterns[idx].name+' copy';
+  clone.name=getDuplicateName(patterns[idx].name);
+  clone.number=++patternCounter;
+  clone.color=nextPatternColor(clone.number);
   patterns.splice(idx+1,0,clone);
   activePatternIndex=idx+1;
-  // Shift orderList indices that pointed above the insertion point
-  orderList=orderList.map(s=>({...s,patternIndex:s.patternIndex>idx?s.patternIndex+1:s.patternIndex}));
+  arrangementClips=arrangementClips.map(s=>({...s,patternIndex:s.patternIndex>idx?s.patternIndex+1:s.patternIndex}));
   schedStep=0;syncStepPresetUI();
   render();saveState();
 }
@@ -2041,8 +2533,7 @@ function deletePattern(idx){
   patterns.splice(idx,1);
   if(activePatternIndex>=patterns.length) activePatternIndex=patterns.length-1;
   else if(activePatternIndex>idx) activePatternIndex--;
-  // Fix orderList: remove slots pointing at deleted pattern, shift higher indices down
-  orderList=orderList.filter(s=>s.patternIndex!==idx).map(s=>({...s,patternIndex:s.patternIndex>idx?s.patternIndex-1:s.patternIndex}));
+  arrangementClips=arrangementClips.filter(s=>s.patternIndex!==idx).map(s=>({...s,patternIndex:s.patternIndex>idx?s.patternIndex-1:s.patternIndex}));
   schedStep=0;syncStepPresetUI();
   render();saveState();
 }
@@ -2066,102 +2557,185 @@ function startRenamePattern(idx,nameEl){
     if(e.key==='Escape'){e.preventDefault();done=true;render();}
   });
 }
-// ── Order list render ────────────────────────────────────────────────────
-let olDraggedItem=null;
-function renderOrderList(){
-  const slotsEl=document.getElementById('ol-slots');
-  const addChipsEl=document.getElementById('ol-add-chips');
-  if(!slotsEl) return;
-  slotsEl.innerHTML='';
-  if(orderList.length===0){
-    const empty=document.createElement('div');empty.className='ol-empty';
-    empty.textContent='No slots yet — click a pattern below to add it';
-    slotsEl.appendChild(empty);
+// ── Timeline render ──────────────────────────────────────────────────────
+function renderTimeline(){
+  const clipsEl=document.getElementById('tl-clips');
+  const rulerEl=document.getElementById('tl-ruler');
+  const addChipsEl=document.getElementById('tl-add-chips');
+  if(!clipsEl||!rulerEl) return;
+
+  const total=Math.max(getTotalTimelineSteps(),64);
+  const totalPx=total*tlPxPerStep+120;
+
+  // Inner width
+  document.getElementById('tl-inner').style.width=totalPx+'px';
+
+  // Ruler
+  rulerEl.innerHTML='';rulerEl.style.width=totalPx+'px';
+  const majorEvery=16,minorEvery=4;
+  for(let s=0;s<=total;s+=minorEvery){
+    const tick=document.createElement('div');
+    tick.className='tl-ruler-tick'+(s%majorEvery===0?' bar':'');
+    tick.style.left=(s*tlPxPerStep)+'px';
+    rulerEl.appendChild(tick);
+    if(s%majorEvery===0){
+      const lbl=document.createElement('div');lbl.className='tl-ruler-label';
+      lbl.style.left=(s*tlPxPerStep)+'px';
+      lbl.textContent=tlTimeMode==='clock'?stepsToClockStr(s,bpm):s;
+      rulerEl.appendChild(lbl);
+    }
   }
-  orderList.forEach((slot,idx)=>{
-    const pat=patterns[slot.patternIndex];
-    const isPlaying=playMode==='song'&&playing&&idx===orderPos;
-    const item=document.createElement('div');
-    item.className='ol-slot'+(isPlaying?' playing':'');item.dataset.idx=idx;item.draggable=false;
-    const handle=document.createElement('span');handle.className='ol-drag';handle.textContent='⠿';
-    handle.addEventListener('mousedown',()=>{item.draggable=true;});
-    const num=document.createElement('span');num.className='ol-num';num.textContent=(idx+1)+'.';
-    const name=document.createElement('span');name.className='ol-pat-name';
-    name.textContent=pat?pat.name:'[deleted]';if(!pat) name.style.color='rgba(220,100,100,.6)';
-    const repWrap=document.createElement('div');repWrap.className='ol-rep-wrap';
-    const repDn=document.createElement('button');repDn.className='ol-rep-btn';repDn.textContent='−';
-    const repVal=document.createElement('span');repVal.className='ol-rep-val';repVal.textContent='×'+slot.repeats;
-    const repUp=document.createElement('button');repUp.className='ol-rep-btn';repUp.textContent='+';
-    repDn.addEventListener('click',e=>{e.stopPropagation();setSlotRepeats(idx,slot.repeats-1);});
-    repUp.addEventListener('click',e=>{e.stopPropagation();setSlotRepeats(idx,slot.repeats+1);});
-    repWrap.append(repDn,repVal,repUp);
-    const tempoWrap=document.createElement('div');tempoWrap.className='ol-tempo-wrap';
-    const tempoBtn=document.createElement('button');
-    tempoBtn.className='ol-tempo-btn'+(slot.tempo!=null?' on':'');
-    tempoBtn.textContent=slot.tempo!=null?slot.tempo+'↗':'↗ BPM';
-    tempoBtn.title=slot.tempo!=null?'BPM: '+slot.tempo+' — click to remove':'Set BPM override for this slot';
-    tempoBtn.addEventListener('click',e=>{
-      e.stopPropagation();
-      if(slot.tempo!=null){setSlotTempo(idx,null);return;}
-      const inp=document.createElement('input');inp.type='number';inp.min=20;inp.max=400;
-      inp.value=bpm;inp.className='ol-tempo-input';
-      tempoBtn.replaceWith(inp);inp.focus();inp.select();
-      inp.addEventListener('blur',()=>setSlotTempo(idx,parseInt(inp.value)||null));
-      inp.addEventListener('keydown',e2=>{
-        if(e2.key==='Enter'){e2.preventDefault();setSlotTempo(idx,parseInt(inp.value)||null);}
-        if(e2.key==='Escape'){e2.preventDefault();setSlotTempo(idx,null);}
+
+  // Clips
+  clipsEl.innerHTML='';
+  if(arrangementClips.length===0){
+    const empty=document.createElement('div');
+    empty.style.cssText='font-family:Cinzel,serif;font-size:10px;color:rgba(201,169,110,.3);padding:14px 20px;font-style:italic;';
+    empty.textContent='No clips — click a pattern below to add it to the timeline';
+    clipsEl.appendChild(empty);
+  }
+  arrangementClips.forEach((clip,ci)=>{
+    const pat=patterns[clip.patternIndex];
+    const effLen=clipEffectiveLen(clip);
+    const repPx=effLen*tlPxPerStep;
+    const border='rgba(201,169,110,.55)'; // gold trim for all clips
+    const bg=pat?patternBgCss(pat,clip.opacity/100):'rgba(40,30,10,.8)';
+    const clipEl=document.createElement('div');
+    clipEl.className='tl-clip';
+    clipEl.dataset.clipIdx=ci;
+    for(let r=0;r<clip.repeatCount;r++){
+      const rep=document.createElement('div');
+      rep.className='tl-rep '+(r===0?'tl-rep-main':'tl-rep-ghost');
+      rep.style.cssText=`width:${repPx}px;background:${bg};border:1px solid ${border};box-sizing:border-box;`;
+      if(r===0){
+        const numEl=document.createElement('div');numEl.className='tl-rep-num';
+        numEl.textContent=pat?String(pat.number||ci+1).padStart(2,'0'):'??';
+        const nameEl=document.createElement('div');nameEl.className='tl-rep-name';
+        nameEl.style.color=border;nameEl.textContent=pat?pat.name:'[deleted]';
+        rep.appendChild(numEl);rep.appendChild(nameEl);
+      }
+      rep.addEventListener('click',e=>{
+        e.stopPropagation();openClipStats(ci,clipEl);
+        if(pat) activePatternIndex=clip.patternIndex;
+        renderPatternBar();render();
       });
-    });
-    tempoWrap.appendChild(tempoBtn);
-    const del=document.createElement('button');del.className='ol-del';del.textContent='✕';del.title='Remove slot';
-    del.addEventListener('click',e=>{e.stopPropagation();removeSlot(idx);});
-    item.append(handle,num,name,repWrap,tempoWrap,del);
-    // drag reorder
-    item.addEventListener('dragstart',e=>{olDraggedItem=item;item.classList.add('ol-dragging');e.dataTransfer.effectAllowed='move';});
-    item.addEventListener('dragover',e=>{
-      if(!olDraggedItem||olDraggedItem===item) return;e.preventDefault();
-      const before=(e.clientY-item.getBoundingClientRect().top)<item.getBoundingClientRect().height/2;
-      item.classList.toggle('ol-drag-top',before);item.classList.toggle('ol-drag-bottom',!before);
-    });
-    item.addEventListener('dragleave',()=>item.classList.remove('ol-drag-top','ol-drag-bottom'));
-    item.addEventListener('drop',e=>{
-      e.preventDefault();if(!olDraggedItem||olDraggedItem===item) return;
-      const before=item.classList.contains('ol-drag-top');
-      item.classList.remove('ol-drag-top','ol-drag-bottom');
-      moveSlot(parseInt(olDraggedItem.dataset.idx),parseInt(item.dataset.idx),before);
-    });
-    item.addEventListener('dragend',()=>{
-      item.classList.remove('ol-dragging');item.draggable=false;
-      document.querySelectorAll('.ol-slot').forEach(s=>s.classList.remove('ol-drag-top','ol-drag-bottom'));
-      olDraggedItem=null;
-    });
-    slotsEl.appendChild(item);
+      if(r>0){
+        rep.addEventListener('contextmenu',e=>{
+          e.preventDefault();openTlCtxMenu(ci,r,e);
+        });
+      }
+      clipEl.appendChild(rep);
+    }
+    clipsEl.appendChild(clipEl);
   });
+
+  // Playhead
+  const ph=document.getElementById('tl-playhead');
+  if(ph) ph.style.transform=`translateX(${timelineVisualPos*tlPxPerStep}px)`;
+
+  // Ruler click to seek
+  rulerEl.onclick=e=>{
+    if(playing) return; // only seek when stopped
+    const rect=rulerEl.getBoundingClientRect();
+    const x=e.clientX-rect.left+document.getElementById('tl-scroll-wrap').scrollLeft;
+    const step=Math.max(0,Math.floor(x/tlPxPerStep));
+    timelinePos=Math.min(getTotalTimelineSteps(),step);
+    timelineVisualPos=timelinePos;
+    const ci=getClipAtStep(timelinePos);
+    if(ci){activePatternIndex=ci.clip.patternIndex;renderPatternBar();render();}
+    const ph2=document.getElementById('tl-playhead');
+    if(ph2) ph2.style.transform=`translateX(${timelinePos*tlPxPerStep}px)`;
+  };
+
+  // Add chips
   if(addChipsEl){
     addChipsEl.innerHTML='';
     patterns.forEach((pat,idx)=>{
-      const chip=document.createElement('button');chip.className='ol-add-chip';
-      chip.textContent='+ '+pat.name;
-      chip.addEventListener('click',()=>addSlot(idx));
+      const chip=document.createElement('button');chip.className='tl-add-chip tb';
+      chip.textContent=(pat.number?String(pat.number).padStart(2,'0')+' ':'')+pat.name;
+      chip.style.borderColor=patternBorderCss(pat);
+      chip.addEventListener('click',()=>addClip(idx));
       addChipsEl.appendChild(chip);
     });
   }
 }
+
+// ── Clip stats popup ─────────────────────────────────────────────────────
+const clipStatsEl=document.getElementById('clip-stats-popup');
+function openClipStats(clipIdx,clipDomEl){
+  tlSelectedClipIdx=clipIdx;
+  const clip=arrangementClips[clipIdx];
+  const pat=patterns[clip.patternIndex];
+  // Position near clicked clip
+  const rect=clipDomEl.getBoundingClientRect();
+  clipStatsEl.style.top=Math.max(10,rect.bottom+6)+'px';
+  clipStatsEl.style.left=Math.max(10,Math.min(window.innerWidth-270,rect.left))+'px';
+  // Populate
+  document.getElementById('csp-num').textContent=pat?'#'+String(pat.number||'').padStart(2,'0'):'';
+  const nameEl=document.getElementById('csp-name');
+  nameEl.textContent=pat?pat.name:'[deleted]';
+  nameEl.style.color=pat?patternBorderCss(pat):undefined;
+  // Make name editable on click
+  nameEl.onclick=()=>{
+    nameEl.contentEditable='true';nameEl.classList.add('editing');nameEl.focus();
+    const sel=window.getSelection();sel.selectAllChildren(nameEl);
+  };
+  nameEl.onblur=()=>{
+    nameEl.contentEditable='false';nameEl.classList.remove('editing');
+    if(pat){pat.name=nameEl.textContent.trim()||pat.name;renderTimeline();renderPatternBar();saveState();}
+  };
+  nameEl.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();nameEl.blur();}};
+  const swatch=document.getElementById('csp-swatch');
+  swatch.style.background=pat?pat.color?pat.color.border:'#c9a96e':'#888';
+  document.getElementById('csp-rep-val').textContent='×'+clip.repeatCount;
+  document.getElementById('csp-trim-start').value=clip.trimStart||0;
+  const end=clip.trimEnd!=null?clip.trimEnd:(pat?pat.stepCount:16);
+  document.getElementById('csp-trim-end').value=end;
+  document.getElementById('csp-bpm').value=clip.tempo||'';
+  const opVal=clip.opacity!=null?clip.opacity:100;
+  document.getElementById('csp-opacity').value=opVal;
+  document.getElementById('csp-opacity-val').textContent=opVal+'%';
+  clipStatsEl.classList.add('show');
+}
+function closeClipStats(){clipStatsEl.classList.remove('show');tlSelectedClipIdx=null;}
+// Stats popup listeners
+document.getElementById('csp-close').addEventListener('click',closeClipStats);
+document.getElementById('csp-rep-dn').addEventListener('click',()=>{if(tlSelectedClipIdx===null)return;setClipRepeat(tlSelectedClipIdx,arrangementClips[tlSelectedClipIdx].repeatCount-1);document.getElementById('csp-rep-val').textContent='×'+arrangementClips[tlSelectedClipIdx].repeatCount;});
+document.getElementById('csp-rep-up').addEventListener('click',()=>{if(tlSelectedClipIdx===null)return;setClipRepeat(tlSelectedClipIdx,arrangementClips[tlSelectedClipIdx].repeatCount+1);document.getElementById('csp-rep-val').textContent='×'+arrangementClips[tlSelectedClipIdx].repeatCount;});
+document.getElementById('csp-trim-start').addEventListener('change',e=>{if(tlSelectedClipIdx===null)return;setClipTrimStart(tlSelectedClipIdx,parseInt(e.target.value)||0);});
+document.getElementById('csp-trim-end').addEventListener('change',e=>{if(tlSelectedClipIdx===null)return;setClipTrimEnd(tlSelectedClipIdx,parseInt(e.target.value)||1);});
+document.getElementById('csp-bpm').addEventListener('change',e=>{if(tlSelectedClipIdx===null)return;setClipTempo(tlSelectedClipIdx,parseInt(e.target.value)||null);});
+document.getElementById('csp-opacity').addEventListener('input',e=>{if(tlSelectedClipIdx===null)return;setClipOpacity(tlSelectedClipIdx,parseInt(e.target.value));document.getElementById('csp-opacity-val').textContent=e.target.value+'%';});
+document.getElementById('csp-remove').addEventListener('click',()=>{if(tlSelectedClipIdx===null)return;removeClip(tlSelectedClipIdx);closeClipStats();});
+document.addEventListener('mousedown',e=>{if(clipStatsEl.classList.contains('show')&&!clipStatsEl.contains(e.target)&&!e.target.closest('.tl-clip'))closeClipStats();});
+
+// ── Timeline context menu (break apart) ──────────────────────────────────
+const tlCtxMenuEl=document.getElementById('tl-ctx-menu');
+function openTlCtxMenu(clipIdx,repIdx,e){
+  tlCtxMenuEl.innerHTML='';
+  const opt=document.createElement('div');opt.className='ctx-opt';opt.textContent='Break apart from loop';
+  opt.addEventListener('click',()=>{breakApartClip(clipIdx,repIdx);tlCtxMenuEl.classList.remove('show');});
+  tlCtxMenuEl.appendChild(opt);
+  tlCtxMenuEl.style.left=Math.min(e.clientX,window.innerWidth-140)+'px';
+  tlCtxMenuEl.style.top=Math.min(e.clientY+4,window.innerHeight-80)+'px';
+  tlCtxMenuEl.classList.add('show');
+}
+document.addEventListener('mousedown',e=>{if(tlCtxMenuEl.classList.contains('show')&&!tlCtxMenuEl.contains(e.target))tlCtxMenuEl.classList.remove('show');});
 
 // ── Play mode toggle ─────────────────────────────────────────────────────
 function setPlayMode(mode){
   if(playing) stopPlay();
   playMode=mode;
   const btn=document.getElementById('play-mode-btn');
-  const panel=document.getElementById('order-list-panel');
+  const panel=document.getElementById('timeline-panel');
   if(mode==='song'){
     btn.textContent='◉ SONG';btn.className='tb play-mode-song';
-    panel.classList.remove('ol-hidden');
-    if(orderList.length===0) orderList=patterns.map((_,i)=>newSlot(i));
-    renderOrderList();
+    panel.classList.remove('tl-hidden');
+    if(arrangementClips.length===0) arrangementClips=patterns.map((_,i)=>newClip(i));
+    renderTimeline();
   } else {
     btn.textContent='◈ PATTERN';btn.className='tb play-mode-pattern';
-    panel.classList.add('ol-hidden');
+    panel.classList.add('tl-hidden');
   }
   renderPatternBar();saveState();
 }
@@ -2174,19 +2748,48 @@ document.getElementById('song-loop-btn').addEventListener('click',()=>{
   saveState();
 });
 
+// Timeline zoom
+const ZOOM_LEVELS=[2,3,4,6,8,10,14,20,28,40];
+let tlZoomIdx=3; // default = 6px/step
+tlPxPerStep=ZOOM_LEVELS[tlZoomIdx];
+document.getElementById('tl-zoom-in').addEventListener('click',()=>{if(tlZoomIdx<ZOOM_LEVELS.length-1){tlZoomIdx++;tlPxPerStep=ZOOM_LEVELS[tlZoomIdx];document.getElementById('tl-zoom-val').textContent=tlPxPerStep;renderTimeline();}});
+document.getElementById('tl-zoom-out').addEventListener('click',()=>{if(tlZoomIdx>0){tlZoomIdx--;tlPxPerStep=ZOOM_LEVELS[tlZoomIdx];document.getElementById('tl-zoom-val').textContent=tlPxPerStep;renderTimeline();}});
+document.getElementById('tl-time-mode').addEventListener('click',()=>{tlTimeMode=tlTimeMode==='steps'?'clock':'steps';document.getElementById('tl-time-mode').textContent=tlTimeMode==='steps'?'STEPS':'CLOCK';renderTimeline();});
+
+// Rewind button + double-click stop
+document.getElementById('rewind-btn').addEventListener('click',rewindSong);
+let stopClickTimer=null;
+document.getElementById('stop-btn').addEventListener('click',()=>{
+  stopPlay();
+  if(stopClickTimer){clearTimeout(stopClickTimer);stopClickTimer=null;rewindSong();}
+  else{stopClickTimer=setTimeout(()=>{stopClickTimer=null;},350);}
+});
+
 function renderPatternBar(){
   const container=document.getElementById('pattern-chips');
   container.innerHTML='';
   patterns.forEach((pat,idx)=>{
     const isActive=idx===activePatternIndex;
     const isPending=idx===pendingPatternIndex;
+    // Chips use gold border (familiar look) but dark pattern-color background
+    const bg=patternBgCss(pat,isActive?1:0.6);
     const chip=document.createElement('div');
     chip.className='pattern-chip'+(isActive?' active':'')+(isPending?' pending':'');
-    const nameEl=document.createElement('span');nameEl.className='pattern-chip-name';nameEl.textContent=pat.name;
+    chip.style.background=bg;
+    // Active chip gets a gold border; inactive get a softer gold
+    chip.style.borderColor=isActive?'rgba(201,169,110,.8)':'rgba(201,169,110,.25)';
+    const numRow=document.createElement('div');numRow.className='pattern-chip-numrow';
+    const numEl=document.createElement('span');numEl.className='pattern-chip-num';
+    numEl.textContent=String(pat.number||idx+1).padStart(2,'0');
+    numEl.style.color='rgba(201,169,110,.45)';
+    const nameEl=document.createElement('span');nameEl.className='pattern-chip-name';
+    nameEl.style.color=isActive?'var(--gold)':'rgba(201,169,110,.65)';
+    nameEl.textContent=pat.name;
+    numRow.appendChild(numEl);numRow.appendChild(nameEl);
     const subEl=document.createElement('span');
     subEl.className='pattern-chip-sub'+(isPending?' pending-label':'');
     subEl.textContent=isPending?'▷ queued next':pat.stepCount+' steps';
-    chip.appendChild(nameEl);chip.appendChild(subEl);
+    chip.appendChild(numRow);chip.appendChild(subEl);
     chip.addEventListener('click',()=>switchPattern(idx));
     chip.addEventListener('dblclick',e=>{e.stopPropagation();e.preventDefault();startRenamePattern(idx,nameEl);});
     chip.addEventListener('contextmenu',e=>{e.preventDefault();openPatternCtxMenu(idx,e);});
@@ -3419,7 +4022,6 @@ document.getElementById('circle-close').addEventListener('click',()=>{
 // TRANSPORT
 // ════════════════════════════════════════════════════════
 document.getElementById('play-btn').addEventListener('click',()=>{if(playing)stopPlay();else startPlay();});
-document.getElementById('stop-btn').addEventListener('click',()=>{stopPlay();schedStep=0;});
 function setBpm(v){pushHistory();bpm=Math.max(40,Math.min(300,v));document.getElementById('bpm-val').textContent=bpm;saveState();}
 document.getElementById('bpm-dn').addEventListener('click',()=>setBpm(bpm-5));
 document.getElementById('bpm-up').addEventListener('click',()=>setBpm(bpm+5));
@@ -3463,9 +4065,9 @@ function updateAddTrackButton(){
 // ════════════════════════════════════════════════════════
 // SAVE / LOAD
 // ════════════════════════════════════════════════════════
-const SAVE_KEY='trico_seq_v10';
+const SAVE_KEY='trico_seq_v11';
 function saveState(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,channels,patterns,activePatternIndex,currentSongId,currentSongName,songMultiOctave,orderList,playMode,songLoop}));}catch(e){}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({bpm,channels,patterns,activePatternIndex,currentSongId,currentSongName,songMultiOctave,arrangementClips,playMode,songLoop,patternCounter}));}catch(e){}
 }
 function loadState(){
   try{
@@ -3476,7 +4078,11 @@ function loadState(){
       activePatternIndex=d.activePatternIndex||0;
       currentSongId=d.currentSongId||null;currentSongName=d.currentSongName||'';
       songMultiOctave=d.songMultiOctave||false;
-      orderList=d.orderList||[];playMode=d.playMode||'pattern';songLoop=d.songLoop!==undefined?d.songLoop:true;
+      if(d.arrangementClips) arrangementClips=d.arrangementClips;
+      else if(d.orderList) arrangementClips=migrateOrderListToClips(d.orderList,patterns);
+      else arrangementClips=[];
+      playMode=d.playMode||'pattern';songLoop=d.songLoop!==undefined?d.songLoop:true;
+      patternCounter=d.patternCounter||0;
       if(!patterns.length){channels=[];patterns=[newPattern('Pattern 1',16,[])];activePatternIndex=0;}
       document.getElementById('bpm-val').textContent=bpm;
       syncStepPresetUI();updateSongNameDisplay();updateOctaveModeBtn();
@@ -3487,7 +4093,8 @@ function loadState(){
     const d=JSON.parse(legacyRaw);bpm=d.bpm||120;
     const migrated=migrateFlatTracks(d.tracks||[],d.stepCount||16);
     channels=migrated.channels;patterns=migrated.patterns;activePatternIndex=0;
-    songMultiOctave=false;orderList=[];playMode='pattern';songLoop=true;
+    songMultiOctave=false;arrangementClips=[];playMode='pattern';songLoop=true;
+    backfillPatternColors(patterns);
     document.getElementById('bpm-val').textContent=bpm;
     syncStepPresetUI();updateSongNameDisplay();updateOctaveModeBtn();
     return true;
@@ -3504,7 +4111,7 @@ async function init(){
     channels=[newChannel(),newChannel(),newChannel(),newChannel()];
     patterns=[newPattern('Pattern 1',16,channels)];
     activePatternIndex=0;songMultiOctave=true;
-    orderList=[];playMode='pattern';songLoop=true;
+    arrangementClips=[];playMode='pattern';songLoop=true;patternCounter=0;
   }
   updateOctaveModeBtn();
   // Restore play-mode UI from loaded state
@@ -3512,14 +4119,19 @@ async function init(){
   const panel=document.getElementById('order-list-panel');
   if(playMode==='song'){
     pmBtn.textContent='◉ SONG';pmBtn.className='tb play-mode-song';
-    panel.classList.remove('ol-hidden');
+    panel.classList.remove('tl-hidden');
   } else {
     pmBtn.textContent='◈ PATTERN';pmBtn.className='tb play-mode-pattern';
-    panel.classList.add('ol-hidden');
+    panel.classList.add('tl-hidden');
   }
   const loopBtn=document.getElementById('song-loop-btn');
   loopBtn.textContent=songLoop?'↻ LOOP':'■ END';
   loopBtn.className='tb '+(songLoop?'ol-loop-on':'ol-loop-off');
+  backfillPatternColors(patterns);
+  // Reset all popups/modals to closed state
+  closeConfirmModal();closeExportPopup();closeClipStats();
+  // Sync zoom display with default
+  document.getElementById('tl-zoom-val').textContent=tlPxPerStep;
   buildCircleLayout();render();
 }
 init();
