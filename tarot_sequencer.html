@@ -75,12 +75,42 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 .tl-ruler-tick.bar{background:rgba(201,169,110,.4);height:14px;}
 .tl-ruler-label{position:absolute;top:6px;font-family:'Cinzel',serif;font-size:7px;color:rgba(201,169,110,.5);transform:translateX(-50%);white-space:nowrap;pointer-events:none;}
 /* Track area */
-#tl-track{position:relative;height:56px;background:rgba(0,0,0,.25);border-bottom:1px solid rgba(201,169,110,.06);}
-#tl-clips{position:absolute;top:4px;left:0;height:48px;display:flex;gap:0;}
-/* Clips */
-.tl-clip{position:relative;height:48px;border-radius:3px;display:flex;overflow:hidden;flex-shrink:0;cursor:pointer;}
-.tl-clip:hover{filter:brightness(1.15);}
-.tl-clip.tl-active{outline:2px solid rgba(140,255,180,.9);outline-offset:-2px;filter:brightness(1.6);box-shadow:0 0 12px rgba(140,255,180,.4);}
+#tl-track{position:relative;height:62px;background:rgba(0,0,0,.25);border-bottom:1px solid rgba(201,169,110,.06);}
+#tl-clips{position:absolute;top:2px;left:0;height:58px;display:flex;gap:0;}
+/* ── Clip base ── */
+.tl-clip{position:relative;height:58px;border-radius:3px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;cursor:default;}
+.tl-clip:hover{filter:brightness(1.06);}
+/* Drag bar (top strip) */
+/* Gear button inside drag bar */
+.tl-gear-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:rgba(201,169,110,.35);font-size:9px;cursor:pointer;padding:0 2px;line-height:1;transition:color .14s;}
+.tl-gear-btn:hover{color:var(--gold);}
+.tl-clip-drag-bar{position:relative;height:10px;background:rgba(201,169,110,.1);display:flex;align-items:center;justify-content:center;cursor:grab;flex-shrink:0;border-bottom:1px solid rgba(201,169,110,.12);user-select:none;transition:background .12s;}
+/* Snap controls */
+#tl-snap-group{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+#tl-snap-btn.tl-snap-off{border-color:rgba(201,169,110,.2);color:rgba(201,169,110,.4);}
+#tl-snap-btn.tl-snap-on{border-color:rgba(201,169,110,.7);color:var(--gold);background:var(--gf);}
+.tl-snap-sel{background:#0d0a1e;border:1px solid var(--border);color:rgba(201,169,110,.6);font-family:'Cinzel',serif;font-size:8px;padding:3px 4px;border-radius:3px;cursor:pointer;}
+/* Resize tooltip */
+#tl-resize-tip{position:absolute;top:-18px;display:none;font-family:'Cinzel',serif;font-size:8px;color:var(--gold);background:rgba(6,4,14,.9);border:1px solid rgba(201,169,110,.3);border-radius:3px;padding:2px 6px;pointer-events:none;z-index:40;white-space:nowrap;transform:translateX(-50%);}
+/* More space below timeline */
+#timeline-panel{background:rgba(6,4,14,.97);border-top:3px solid rgba(201,169,110,.08);border-bottom:3px solid rgba(201,169,110,.08);margin:5px 0 16px 0;}
+.tl-clip-drag-bar:hover{background:rgba(201,169,110,.22);}
+.tl-clip.tl-lifted .tl-clip-drag-bar{cursor:grabbing;background:rgba(201,169,110,.3);}
+.tl-clip.tl-lifted{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.9);z-index:25;opacity:.85;}
+.tl-drag-dots{font-size:7px;color:rgba(201,169,110,.4);letter-spacing:3px;}
+/* Reps row */
+.tl-reps-row{flex:1;display:flex;position:relative;}
+/* Resize handles */
+.tl-resize-handle{position:absolute;top:0;width:7px;bottom:0;cursor:ew-resize;z-index:15;background:transparent;transition:background .14s;}
+.tl-resize-handle:hover{background:rgba(201,169,110,.4);}
+.tl-resize-l{left:0;border-radius:3px 0 0 3px;}
+.tl-resize-r{right:0;border-radius:0 3px 3px 0;}
+/* Selection */
+.tl-clip.tl-selected{outline:2px solid rgba(201,169,110,.75);outline-offset:-1px;}
+.tl-clip.tl-selected .tl-clip-drag-bar{background:rgba(201,169,110,.22);}
+/* Insert indicator */
+#tl-insert-indicator{position:absolute;top:0;width:3px;height:100%;background:linear-gradient(to bottom,var(--gold),rgba(201,169,110,.3));display:none;z-index:30;border-radius:1px;box-shadow:0 0 8px rgba(201,169,110,.6);pointer-events:none;}
+.tl-clip.tl-active:not(.tl-selected){outline:2px solid rgba(140,255,180,.9);outline-offset:-2px;filter:brightness(1.6);box-shadow:0 0 12px rgba(140,255,180,.4);}
 /* Each repeat block inside the clip */
 .tl-rep{height:100%;display:flex;flex-direction:column;justify-content:center;border-right:1px solid rgba(0,0,0,.3);flex-shrink:0;overflow:hidden;padding:4px 6px;box-sizing:border-box;}
 .tl-rep:last-child{border-right:none;}
@@ -92,7 +122,7 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 /* Playhead */
 #tl-playhead{position:absolute;top:0;left:0;width:2px;pointer-events:none;z-index:20;transform:translateX(0);}
 #tl-playhead-head{width:14px;height:12px;background:rgba(255,255,220,.95);clip-path:polygon(50% 100%,0 0,100% 0);margin-left:-6px;filter:drop-shadow(0 0 3px rgba(255,255,180,.8));}
-#tl-playhead-line{width:2px;height:78px;background:rgba(255,255,200,.75);margin-left:-1px;box-shadow:0 0 4px rgba(255,255,180,.5);}
+#tl-playhead-line{width:2px;height:84px;background:rgba(255,255,200,.75);margin-left:-1px;box-shadow:0 0 4px rgba(255,255,180,.5);}
 /* Clip stats popup */
 #clip-stats-popup{position:fixed;z-index:310;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:14px;box-shadow:0 16px 48px rgba(0,0,0,.95);display:none;min-width:240px;max-width:90vw;}
 #clip-stats-popup.show{display:block;}
@@ -290,6 +320,16 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 
 /* MELODY STEP CELLS */
 .step-cell{width:var(--sw);min-width:var(--sw);height:var(--sh);border-radius:4px;border:1px solid rgba(201,169,110,.1);background:rgba(0,0,0,.45);position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:3px;overflow:hidden;flex-shrink:0;transition:transform .07s,border-color .1s,box-shadow .1s;user-select:none;}
+.step-cell.filled[draggable="true"]{cursor:grab;}
+.step-cell.card-dragging{opacity:.35;cursor:grabbing;}
+.step-cell.card-drag-over{box-shadow:inset 0 0 0 2px var(--gold)!important;border-color:var(--gold)!important;}
+/* Gradient copy buttons */
+.gp-ab-btn{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.06em;background:rgba(0,0,0,.4);border:1px solid rgba(201,169,110,.2);color:rgba(201,169,110,.5);padding:3px 5px;cursor:pointer;border-radius:2px;transition:all .14s;}
+.gp-ab-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gf);}
+/* Gradient color clipboard buttons */
+.gp-color-ctx{position:fixed;z-index:360;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:5px;padding:5px;box-shadow:0 8px 28px rgba(0,0,0,.95);display:none;min-width:100px;}
+.gp-color-ctx.show{display:block;}
+/* Channel header right-click menu (uses existing .ctx-opt style) */
 .step-cell:hover{border-color:rgba(201,169,110,.32);background:rgba(201,169,110,.04);}
 .step-cell.beat1{border-color:rgba(201,169,110,.2);}
 .step-cell.filled{border-color:rgba(255,255,255,.18);}
@@ -540,10 +580,21 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
     <span class="ctl-lbl">TIMELINE</span>
     <div id="tl-zoom-group">
       <button id="tl-zoom-out" class="tb">−</button>
-      <span id="tl-zoom-val" class="ctl-val" style="min-width:28px">16</span>
+      <span id="tl-zoom-val" class="ctl-val" style="min-width:28px">6</span>
       <button id="tl-zoom-in" class="tb">+</button>
     </div>
     <button id="tl-time-mode" class="tb" title="Toggle steps / clock time">STEPS</button>
+    <div id="tl-snap-group">
+      <button id="tl-snap-btn" class="tb tl-snap-off" title="Snap resize to step grid">⊡ SNAP</button>
+      <select id="tl-snap-steps" class="tl-snap-sel" title="Snap resolution">
+        <option value="2">÷2</option>
+        <option value="3">÷3</option>
+        <option value="4" selected>÷4</option>
+        <option value="6">÷6</option>
+        <option value="8">÷8</option>
+        <option value="16">÷16</option>
+      </select>
+    </div>
     <div id="tl-add-row">
       <span class="ctl-lbl">ADD →</span>
       <div id="tl-add-chips"></div>
@@ -554,6 +605,8 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
       <div id="tl-ruler"></div>
       <div id="tl-track">
         <div id="tl-clips"></div>
+        <div id="tl-insert-indicator"></div>
+        <div id="tl-resize-tip"></div>
       </div>
       <div id="tl-playhead">
         <div id="tl-playhead-head"></div>
@@ -702,6 +755,7 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
     </div>
     <button id="gp-swap" title="Swap colors">&#8644;</button>
   </div>
+<div id="gp-color-ctx" class="gp-color-ctx"></div>
 
   <div id="gp-controls-row">
     <div id="gp-opacity-row">
@@ -1155,17 +1209,31 @@ function triggerDownload(blob,filename){
 // ── Export slot list: what to render ────────────────────────────────────
 function buildExportSlots(){
   if(playMode==='song'&&arrangementClips.length>0){
-    return arrangementClips.map(c=>({patternIndex:c.patternIndex,repeats:c.repeatCount,tempo:c.tempo}));
+    return arrangementClips.map(c=>{
+      const pat=patterns[c.patternIndex];
+      const sc=pat?.stepCount||16;
+      return{
+        patternIndex:c.patternIndex,
+        repeats:c.repeatCount,
+        tempo:c.tempo,
+        trimStart:c.trimStart||0,
+        trimEnd:c.trimEnd!=null?Math.min(c.trimEnd,sc):sc,
+      };
+    });
   }
-  return[{patternIndex:activePatternIndex,repeats:4,tempo:null}];
+  // Pattern mode: export current pattern, full length, 4 loops
+  const pat=patterns[activePatternIndex];
+  const sc=pat?.stepCount||16;
+  return[{patternIndex:activePatternIndex,repeats:4,tempo:null,trimStart:0,trimEnd:sc}];
 }
 function calcExportDuration(slots){
   const TAIL=1.2;
   let total=TAIL,curBpm=bpm;
   for(const sl of slots){
-    const pat=patterns[sl.patternIndex];if(!pat) continue;
+    if(!patterns[sl.patternIndex]) continue;
     const b=sl.tempo||curBpm;
-    total+=pat.stepCount*(60/b/4)*sl.repeats;
+    const effectiveSteps=sl.trimEnd-sl.trimStart; // respects clip trim
+    total+=effectiveSteps*(60/b/4)*sl.repeats;
     curBpm=sl.tempo||curBpm;
   }
   return total;
@@ -1196,13 +1264,14 @@ async function renderToBuffer(onProgress){
     activePatternIndex=slot.patternIndex;
     bpm=slot.tempo||savedBpm;
     const stepDur=60/bpm/4;
+    const start=slot.trimStart||0;
+    const end=slot.trimEnd!=null?slot.trimEnd:pat.stepCount;
     for(let rep=0;rep<slot.repeats;rep++){
-      for(let step=0;step<pat.stepCount;step++){
-        fireStep(step,currentTime);
+      for(let step=start;step<end;step++){
+        fireStep(step,currentTime,bpm);
         currentTime+=stepDur;
       }
     }
-    savedBpm!==bpm&&(savedBpm); // keep linter happy
   }
 
   // Restore live state (before render completes, safe because scheduling is done)
@@ -1831,17 +1900,23 @@ let lastScheduledPatternIndex=-1; // detects clip changes to trigger grid re-ren
 let pendingPatternIndex=null; // queued pattern, applied at loop boundary
 let patternSwitchMode='queue'; // 'queue' = wait for loop end; 'instant' = switch mid-pattern
 // ── Song / Arrangement state ─────────────────────────────────────────────
-let arrangementClips=[];  // [{id,patternIndex,repeatCount,trimStart,trimEnd,tempo,opacity}]
-let playMode='pattern';   // 'pattern' | 'song'
-let songLoop=true;        // loop arrangement vs stop at end
-let timelinePos=0;        // absolute step position on the timeline (song mode)
-let timelineVisualPos=0;  // smoothly interpolated for playhead rendering
+let arrangementClips=[];
+let playMode='pattern';
+let songLoop=true;
+let timelinePos=0;
+let timelineVisualPos=0;
 let lastStepFiredTime=0;
-let songPlayStartAudioTime=0;  // audio time when song mode play began
-let songPlayStartTimelinePos=0; // timeline position when play began
-let tlPxPerStep=6;        // pixels per step (zoom level — default: 6)
-let tlTimeMode='steps';   // 'steps' | 'clock'
-let tlSelectedClipIdx=null; // index of clip whose stats popup is open
+let songPlayStartAudioTime=0;
+let songPlayStartTimelinePos=0;
+let tlPxPerStep=6;
+let tlTimeMode='steps';
+let tlSelectedClipIdx=null;
+// ── Phase 2: selection, copy/paste, drag, resize ─────────────────────────
+let selectedClips=new Set();  // indices of currently selected clips
+let clipboardClips=[];         // [{patternIndex,repeatCount,trimStart,trimEnd,tempo,opacity}]
+let tlDrag={active:false,indices:[],startX:0,insertBefore:null,moved:false};
+let tlResize={active:false,clipIdx:null,side:null,startX:0,origStart:0,origEnd:0};
+let tlSnap={on:false,steps:4}; // snap-to-grid for drag and resize
 const MAX_TRACKS=16;
 const stepQueue=[];
 // CHANNELS = persistent instrument definitions (suit, gradient, pan, vol, octave, mute/solo).
@@ -1869,7 +1944,168 @@ function newChannelData(suit,stepCount){
     drumSteps:isDrum?DRUM_SLOTS.map(()=>new Array(stepCount).fill(false)):null
   };
 }
-// ── Pattern color system ────────────────────────────────────────────────
+// ── Card drag-and-drop state ─────────────────────────────────────────────
+let dragCardState=null;  // {fromCi,fromSi,n,oct,vel,copy}
+
+// ── Channel cards clipboard ──────────────────────────────────────────────
+let channelCardClipboard=null; // {steps,stepOctaves,stepVelocities,stepCount}
+
+// ── Gradient color clipboard ─────────────────────────────────────────────
+let gradColorClipboard=null;   // {r,g,b} — a single color to paste into any gradient slot
+let gradFullClipboard=null;    // {start,end,blend,opacity} — full gradient to paste to another channel
+
+// ── Drop card into a step slot ───────────────────────────────────────────
+function dropCard(toCi,toSi,drag){
+  pushHistory();
+  const pat=patterns[activePatternIndex];
+  const toPd=pat.channelData[toCi];
+  const sc=pat.stepCount;
+  // Ensure octave/velocity arrays exist
+  if(!toPd.stepOctaves)    toPd.stepOctaves   =new Array(sc).fill(0);
+  if(!toPd.stepVelocities) toPd.stepVelocities=new Array(sc).fill(100);
+  // Place card at destination
+  toPd.steps[toSi]       =drag.n;
+  toPd.stepOctaves[toSi] =drag.oct;
+  toPd.stepVelocities[toSi]=drag.vel;
+  // Clear source if move (not copy) and not dropping on itself
+  if(!drag.copy&&(drag.fromCi!==toCi||drag.fromSi!==toSi)){
+    const fromPd=pat.channelData[drag.fromCi];
+    fromPd.steps[drag.fromSi]=null;
+    if(fromPd.stepOctaves)    fromPd.stepOctaves[drag.fromSi]=0;
+    if(fromPd.stepVelocities) fromPd.stepVelocities[drag.fromSi]=100;
+  }
+  render();saveState();
+}
+
+// ── Channel cards copy/paste ─────────────────────────────────────────────
+function copyChannelCards(ci){
+  const pat=patterns[activePatternIndex];
+  const pd=pat.channelData[ci];
+  channelCardClipboard={
+    steps:      [...(pd.steps||[])],
+    stepOctaves:[...(pd.stepOctaves||new Array(pat.stepCount).fill(0))],
+    stepVelocities:[...(pd.stepVelocities||new Array(pat.stepCount).fill(100))],
+    stepCount:  pat.stepCount
+  };
+}
+function pasteChannelCards(ci){
+  if(!channelCardClipboard) return;
+  pushHistory();
+  const pat=patterns[activePatternIndex];
+  const pd=pat.channelData[ci];
+  const sc=pat.stepCount;
+  const src=channelCardClipboard;
+  pd.steps=[];
+  for(let i=0;i<sc;i++) pd.steps.push(i<src.steps.length?src.steps[i]:null);
+  pd.stepOctaves=[];
+  for(let i=0;i<sc;i++) pd.stepOctaves.push(i<src.stepOctaves.length?src.stepOctaves[i]:0);
+  pd.stepVelocities=[];
+  for(let i=0;i<sc;i++) pd.stepVelocities.push(i<src.stepVelocities.length?src.stepVelocities[i]:100);
+  render();saveState();
+}
+
+// ── Channel header right-click context menu ──────────────────────────────
+let chCtxMenu=null;
+function openChannelCtxMenu(ci,e){
+  if(!chCtxMenu){
+    chCtxMenu=document.createElement('div');
+    chCtxMenu.id='ch-ctx-menu';
+    chCtxMenu.className='ctx-opt'; // reuse base styles
+    chCtxMenu.style.cssText='position:fixed;z-index:310;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:6px;box-shadow:0 12px 36px rgba(0,0,0,.95);display:none;min-width:140px;';
+    document.body.appendChild(chCtxMenu);
+    document.addEventListener('mousedown',ev=>{
+      if(chCtxMenu&&!chCtxMenu.contains(ev.target)) chCtxMenu.style.display='none';
+    });
+  }
+  chCtxMenu.innerHTML='';
+  function addOpt(label,fn,danger){
+    const o=document.createElement('div');
+    o.className='ctx-opt'+(danger?' danger':'');o.textContent=label;
+    o.addEventListener('click',ev=>{ev.stopPropagation();fn();chCtxMenu.style.display='none';});
+    chCtxMenu.appendChild(o);
+  }
+  addOpt('Copy Channel Cards',()=>copyChannelCards(ci));
+  if(channelCardClipboard) addOpt('Paste Channel Cards',()=>pasteChannelCards(ci));
+  chCtxMenu.style.left=Math.min(e.clientX,window.innerWidth-160)+'px';
+  chCtxMenu.style.top=Math.min(e.clientY+4,window.innerHeight-140)+'px';
+  chCtxMenu.style.display='block';
+}
+
+// ── Gradient color clipboard helpers ────────────────────────────────────
+function copyGradColor(target){
+  if(gradTi===null) return;
+  const hex=channels[gradTi].grad[target];
+  const{r,g,b}=hexToRgb(hex);
+  gradColorClipboard={r,g,b};
+}
+function pasteGradColor(target){
+  if(gradTi===null||!gradColorClipboard) return;
+  beginGesture();
+  applySoundColor(gradColorClipboard,{target});
+}
+
+// Gradient color swatch right-click → copy/paste menu
+const gpColorCtx=document.getElementById('gp-color-ctx');
+function copyFullGradient(){
+  if(gradTi===null) return;
+  const g=channels[gradTi].grad;
+  gradFullClipboard={start:g.start,end:g.end,blend:g.blend,opacity:g.opacity};
+}
+function pasteFullGradient(){
+  if(gradTi===null||!gradFullClipboard) return;
+  pushHistory();
+  const g=channels[gradTi].grad;
+  g.start=gradFullClipboard.start;g.end=gradFullClipboard.end;
+  g.blend=gradFullClipboard.blend;g.opacity=gradFullClipboard.opacity;
+  // Sync the blend select and opacity controls
+  const blendEl=document.getElementById('gp-blend');
+  if(blendEl) blendEl.value=g.blend||'normal';
+  const opEl=document.getElementById('gp-opacity');
+  const opValEl=document.getElementById('gp-opacity-val');
+  if(opEl){ opEl.value=g.opacity??100; }
+  if(opValEl){ opValEl.textContent=(g.opacity??100)+'%'; }
+  // Sync start/end color inputs
+  const startEl=document.getElementById('gp-start');
+  const endEl=document.getElementById('gp-end');
+  if(startEl) startEl.value=g.start;
+  if(endEl) endEl.value=g.end;
+  refreshSoundMapping();
+  render();saveState();
+}
+function openGpColorCtx(target,e){
+  if(!gpColorCtx) return;
+  gpColorCtx.innerHTML='';
+  function addO(label,fn){
+    const o=document.createElement('div');o.className='ctx-opt';o.textContent=label;
+    o.addEventListener('click',ev=>{ev.stopPropagation();fn();gpColorCtx.classList.remove('show');});
+    gpColorCtx.appendChild(o);
+  }
+  function addSep(){
+    const s=document.createElement('div');
+    s.style.cssText='height:1px;background:rgba(201,169,110,.12);margin:3px 0;';
+    gpColorCtx.appendChild(s);
+  }
+  addO('Copy Color',()=>copyGradColor(target));
+  addO('Copy Full Gradient',()=>copyFullGradient());
+  if(gradColorClipboard||gradFullClipboard) addSep();
+  if(gradColorClipboard) addO('Paste Color',()=>pasteGradColor(target));
+  if(gradFullClipboard) addO('Paste Gradient',()=>pasteFullGradient());
+  gpColorCtx.style.left=Math.min(e.clientX,window.innerWidth-140)+'px';
+  gpColorCtx.style.top=Math.min(e.clientY+4,window.innerHeight-150)+'px';
+  gpColorCtx.classList.add('show');
+}
+document.addEventListener('mousedown',e=>{
+  if(gpColorCtx&&gpColorCtx.classList.contains('show')&&!gpColorCtx.contains(e.target))
+    gpColorCtx.classList.remove('show');
+});
+// Wire right-click on gradient color swatches (the gp-point wrappers)
+document.querySelectorAll('.gp-point').forEach(pt=>{
+  pt.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    openGpColorCtx(pt.dataset.target,e);
+  });
+});
+
 // Colors are assigned using the golden-angle hue distribution so successive
 // patterns always have maximally different hues.
 let patternCounter=0; // increments on every pattern creation, never reused
@@ -1937,10 +2173,12 @@ let undoStack=[],redoStack=[];
 const MAX_HISTORY=60;
 let pendingGesture=null; // for slider/color-drag gestures (begin...commit)
 
-function snapshotState(){return JSON.stringify({bpm,channels,patterns,activePatternIndex});}
+function snapshotState(){return JSON.stringify({bpm,channels,patterns,activePatternIndex,arrangementClips:JSON.parse(JSON.stringify(arrangementClips))});}
 function restoreSnapshot(json){
   const d=JSON.parse(json);
   bpm=d.bpm;channels=d.channels;patterns=d.patterns;activePatternIndex=d.activePatternIndex||0;
+  if(d.arrangementClips) arrangementClips=d.arrangementClips;
+  selectedClips.clear();
   document.getElementById('bpm-val').textContent=bpm;
   syncStepPresetUI();
   render();saveState();
@@ -2314,16 +2552,17 @@ function rafLoop(){
   }
   // ── Smooth playhead: elapsed time from song start (robust, no stepQueue dependency) ──
   if(playMode==='song'&&playing){
-    // Use elapsed time from play start for smooth, reliable playhead motion.
-    // If songPlayStartAudioTime somehow isn't set, anchor to now.
-    const anchor=songPlayStartAudioTime>0?songPlayStartAudioTime:now;
-    const elapsed=Math.max(0,now-anchor);
+    // Visual position derived directly from the scheduler's lookahead state.
+    // timelinePos = next step the scheduler will fire; nextNoteTime = when it fires.
+    // So: visualPos = timelinePos - (time until next step / stepDur).
+    // This automatically handles loops — when timelinePos resets to 0 and
+    // nextNoteTime advances, the computation gives ≈ 0, then grows smoothly.
     const stepDur=60/bpm/4;
-    const visualPos=songPlayStartTimelinePos+elapsed/stepDur;
+    const rawPos=timelinePos-(nextNoteTime-now)/stepDur;
     const total=getTotalTimelineSteps();
-    timelineVisualPos=isNaN(total)||total===0?visualPos:Math.min(total,visualPos);
+    timelineVisualPos=total>0?Math.max(0,Math.min(total,rawPos)):Math.max(0,rawPos);
     const phEl=document.getElementById('tl-playhead');
-    if(phEl) phEl.style.transform=`translateX(${Math.max(0,timelineVisualPos)*tlPxPerStep}px)`;
+    if(phEl) phEl.style.transform=`translateX(${timelineVisualPos*tlPxPerStep}px)`;
     // Auto-scroll: keep playhead in view
     const wrap=document.getElementById('tl-scroll-wrap');
     if(wrap){
@@ -2557,6 +2796,182 @@ function startRenamePattern(idx,nameEl){
     if(e.key==='Escape'){e.preventDefault();done=true;render();}
   });
 }
+// ── Selection ────────────────────────────────────────────────────────────
+function toggleClipSel(idx,multi){
+  if(multi){
+    if(selectedClips.has(idx)) selectedClips.delete(idx);
+    else selectedClips.add(idx);
+  } else {
+    if(selectedClips.size===1&&selectedClips.has(idx)) return; // already sole selection
+    selectedClips.clear();selectedClips.add(idx);
+  }
+  updateClipSelVisual();
+}
+function clearClipSel(){selectedClips.clear();updateClipSelVisual();}
+function updateClipSelVisual(){
+  document.querySelectorAll('.tl-clip').forEach((el,i)=>{
+    el.classList.toggle('tl-selected',selectedClips.has(i));
+  });
+}
+
+// ── Copy / Paste ─────────────────────────────────────────────────────────
+function copySelectedClips(clipIdx){
+  const indices=selectedClips.size>0?[...selectedClips].sort((a,b)=>a-b):[clipIdx];
+  clipboardClips=indices.filter(i=>arrangementClips[i]).map(i=>({...arrangementClips[i]}));
+}
+function pasteClips(insertBeforeIdx){
+  if(!clipboardClips.length) return;
+  pushHistory();
+  const newClips=clipboardClips.map(c=>({
+    ...c,id:'cl'+Date.now()+Math.random().toString(36).slice(2,5)
+  }));
+  if(insertBeforeIdx==null||insertBeforeIdx>=arrangementClips.length){
+    arrangementClips.push(...newClips);
+  } else {
+    arrangementClips.splice(insertBeforeIdx,0,...newClips);
+  }
+  // Select the newly pasted clips
+  const start=insertBeforeIdx??arrangementClips.length-newClips.length;
+  selectedClips.clear();
+  for(let i=0;i<newClips.length;i++) selectedClips.add(start+i);
+  renderTimeline();saveState();
+}
+
+// ── Drag reorder ─────────────────────────────────────────────────────────
+function getInsertPos(mouseX){
+  // Returns {insertBefore, indicatorX} for a given mouse X relative to #tl-clips
+  let x=0,best={insertBefore:arrangementClips.length,indicatorX:0};
+  let bestDist=Infinity;
+  // Check gap before each non-dragged clip
+  for(let i=0;i<=arrangementClips.length;i++){
+    if(!tlDrag.indices.includes(i)){
+      const d=Math.abs(mouseX-x);
+      if(d<bestDist){bestDist=d;best={insertBefore:i,indicatorX:x};}
+    }
+    if(i<arrangementClips.length&&!tlDrag.indices.includes(i)){
+      x+=clipTotalLen(arrangementClips[i])*tlPxPerStep;
+    }
+  }
+  // Handle end position
+  const d=Math.abs(mouseX-x);
+  if(d<bestDist) best={insertBefore:arrangementClips.length,indicatorX:x};
+  return best;
+}
+function startClipDrag(clipIdx,e){
+  e.preventDefault();
+  const indices=selectedClips.size>0&&selectedClips.has(clipIdx)
+    ?[...selectedClips].sort((a,b)=>a-b):[clipIdx];
+  if(!selectedClips.has(clipIdx)){selectedClips.clear();selectedClips.add(clipIdx);}
+  tlDrag={active:true,indices,startX:e.clientX,insertBefore:null,moved:false};
+  indices.forEach(i=>{
+    const el=document.querySelector(`.tl-clip[data-clip-idx="${i}"]`);
+    if(el) el.classList.add('tl-lifted');
+  });
+}
+function updateClipDrag(e){
+  if(!tlDrag.active) return;
+  if(!tlDrag.moved&&Math.abs(e.clientX-tlDrag.startX)<6) return; // below threshold
+  tlDrag.moved=true;
+  const clipsEl=document.getElementById('tl-clips');
+  const wrap=document.getElementById('tl-scroll-wrap');
+  const rect=clipsEl.getBoundingClientRect();
+  const mouseX=e.clientX-rect.left+(wrap?wrap.scrollLeft:0);
+  const{insertBefore,indicatorX}=getInsertPos(mouseX);
+  tlDrag.insertBefore=insertBefore;
+  const ind=document.getElementById('tl-insert-indicator');
+  if(ind){ind.style.display='block';ind.style.left=indicatorX+'px';}
+}
+function finishClipDrag(){
+  if(!tlDrag.active) return;
+  tlDrag.active=false;
+  document.querySelectorAll('.tl-clip.tl-lifted').forEach(el=>el.classList.remove('tl-lifted'));
+  const ind=document.getElementById('tl-insert-indicator');
+  if(ind) ind.style.display='none';
+  if(!tlDrag.moved) return; // bare click — cancel without moving
+  pushHistory();
+    const moved=tlDrag.indices.map(i=>arrangementClips[i]);
+    const remaining=arrangementClips.filter((_,i)=>!tlDrag.indices.includes(i));
+    // Map original insertBefore to index in remaining array
+    let insAfterRemoval=tlDrag.insertBefore??arrangementClips.length;
+    const before=tlDrag.indices.filter(i=>i<insAfterRemoval).length;
+    insAfterRemoval=Math.max(0,Math.min(remaining.length,insAfterRemoval-before));
+    remaining.splice(insAfterRemoval,0,...moved);
+    arrangementClips=remaining;
+    selectedClips.clear();
+    for(let i=0;i<moved.length;i++) selectedClips.add(insAfterRemoval+i);
+    renderTimeline();saveState();
+}
+
+// ── Resize ───────────────────────────────────────────────────────────────
+function startResize(clipIdx,side,e){
+  e.stopPropagation();e.preventDefault();
+  pushHistory(); // capture pre-resize state for undo
+  const clip=arrangementClips[clipIdx];
+  const pat=patterns[clip.patternIndex];
+  const sc=pat?.stepCount||16;
+  tlResize={
+    active:true,clipIdx,side,startX:e.clientX,
+    origStart:clip.trimStart||0,
+    origEnd:clip.trimEnd!=null?clip.trimEnd:sc,sc
+  };
+}
+function snapVal(v){return tlSnap.on?Math.round(v/tlSnap.steps)*tlSnap.steps:Math.round(v);}
+
+function updateResize(e){
+  if(!tlResize.active) return;
+  const clip=arrangementClips[tlResize.clipIdx];
+  const dx=e.clientX-tlResize.startX;
+  const dsteps=dx/tlPxPerStep;
+  if(tlResize.side==='right'){
+    clip.trimEnd=Math.max(tlResize.origStart+1,Math.min(tlResize.sc,snapVal(tlResize.origEnd+dsteps)));
+  } else {
+    clip.trimStart=Math.max(0,Math.min(tlResize.origEnd-1,snapVal(tlResize.origStart+dsteps)));
+  }
+  // Update tooltip
+  const tip=document.getElementById('tl-resize-tip');
+  if(tip){
+    const label=tlResize.side==='right'?`end: ${clip.trimEnd}`:`start: ${clip.trimStart}`;
+    tip.textContent=label;tip.style.display='block';
+    tip.style.left=(e.clientX-document.getElementById('tl-scroll-wrap').getBoundingClientRect().left)+'px';
+  }
+  renderTimeline();
+}
+function finishResize(){
+  if(!tlResize.active) return;
+  tlResize.active=false;
+  const tip=document.getElementById('tl-resize-tip');
+  if(tip) tip.style.display='none';
+  saveState();
+}
+
+// ── Document-level mouse handlers ────────────────────────────────────────
+document.addEventListener('mousemove',e=>{
+  if(tlDrag.active) updateClipDrag(e);
+  if(tlResize.active) updateResize(e);
+});
+document.addEventListener('mouseup',e=>{
+  if(tlDrag.active) finishClipDrag();
+  if(tlResize.active) finishResize();
+});
+
+// ── Keyboard: Ctrl+C / Ctrl+V ────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){
+    if(selectedClips.size>0){
+      copySelectedClips([...selectedClips][0]);
+      e.preventDefault();
+    }
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){
+    if(clipboardClips.length>0){
+      const after=selectedClips.size>0?Math.max(...selectedClips)+1:null;
+      pasteClips(after);
+      e.preventDefault();
+    }
+  }
+});
+
 // ── Timeline render ──────────────────────────────────────────────────────
 function renderTimeline(){
   const clipsEl=document.getElementById('tl-clips');
@@ -2566,8 +2981,6 @@ function renderTimeline(){
 
   const total=Math.max(getTotalTimelineSteps(),64);
   const totalPx=total*tlPxPerStep+120;
-
-  // Inner width
   document.getElementById('tl-inner').style.width=totalPx+'px';
 
   // Ruler
@@ -2591,22 +3004,48 @@ function renderTimeline(){
   if(arrangementClips.length===0){
     const empty=document.createElement('div');
     empty.style.cssText='font-family:Cinzel,serif;font-size:10px;color:rgba(201,169,110,.3);padding:14px 20px;font-style:italic;';
-    empty.textContent='No clips — click a pattern below to add it to the timeline';
+    empty.textContent='No clips — click a pattern below to add it';
     clipsEl.appendChild(empty);
   }
   arrangementClips.forEach((clip,ci)=>{
     const pat=patterns[clip.patternIndex];
     const effLen=clipEffectiveLen(clip);
     const repPx=effLen*tlPxPerStep;
-    const border='rgba(201,169,110,.55)'; // gold trim for all clips
-    const bg=pat?patternBgCss(pat,clip.opacity/100):'rgba(40,30,10,.8)';
+    const border='rgba(201,169,110,.55)';
+    const bg=pat?patternBgCss(pat,(clip.opacity??100)/100):'rgba(40,30,10,.8)';
+    const isSel=selectedClips.has(ci);
+
     const clipEl=document.createElement('div');
-    clipEl.className='tl-clip';
+    clipEl.className='tl-clip'+(isSel?' tl-selected':'');
     clipEl.dataset.clipIdx=ci;
+
+    // ── Drag bar with gear button ──
+    const dragBar=document.createElement('div');
+    dragBar.className='tl-clip-drag-bar';
+    dragBar.innerHTML='<span class="tl-drag-dots">⠿⠿⠿</span>';
+    // Gear button — opens stats popup
+    const gearBtn=document.createElement('button');
+    gearBtn.className='tl-gear-btn';gearBtn.textContent='⚙';gearBtn.title='Clip settings';
+    gearBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(!selectedClips.has(ci)) toggleClipSel(ci,false);
+      openClipStats(ci,clipEl);
+      if(pat){activePatternIndex=clip.patternIndex;renderPatternBar();render();}
+    });
+    dragBar.appendChild(gearBtn);
+    dragBar.addEventListener('mousedown',e=>{
+      if(e.target===gearBtn||e.target.closest('.tl-gear-btn')) return;
+      e.stopPropagation();startClipDrag(ci,e);
+    });
+    clipEl.appendChild(dragBar);
+
+    // ── Reps row ──
+    const repsRow=document.createElement('div');
+    repsRow.className='tl-reps-row';
     for(let r=0;r<clip.repeatCount;r++){
       const rep=document.createElement('div');
       rep.className='tl-rep '+(r===0?'tl-rep-main':'tl-rep-ghost');
-      rep.style.cssText=`width:${repPx}px;background:${bg};border:1px solid ${border};box-sizing:border-box;`;
+      rep.style.cssText=`width:${repPx}px;background:${bg};border:1px solid ${border};box-sizing:border-box;height:100%;`;
       if(r===0){
         const numEl=document.createElement('div');numEl.className='tl-rep-num';
         numEl.textContent=pat?String(pat.number||ci+1).padStart(2,'0'):'??';
@@ -2615,18 +3054,44 @@ function renderTimeline(){
         rep.appendChild(numEl);rep.appendChild(nameEl);
       }
       rep.addEventListener('click',e=>{
-        e.stopPropagation();openClipStats(ci,clipEl);
-        if(pat) activePatternIndex=clip.patternIndex;
-        renderPatternBar();render();
+        e.stopPropagation();
+        toggleClipSel(ci,!!e.shiftKey);
+        if(pat){activePatternIndex=clip.patternIndex;renderPatternBar();render();}
       });
-      if(r>0){
-        rep.addEventListener('contextmenu',e=>{
-          e.preventDefault();openTlCtxMenu(ci,r,e);
-        });
-      }
-      clipEl.appendChild(rep);
+      rep.addEventListener('contextmenu',e=>{
+        e.preventDefault();
+        if(!e.shiftKey&&!selectedClips.has(ci)) toggleClipSel(ci,false);
+        openTlCtxMenu(e,ci,r>0?r:null);
+      });
+      repsRow.appendChild(rep);
     }
+    clipEl.appendChild(repsRow);
+
+    // ── Resize handles ──
+    const resL=document.createElement('div');
+    resL.className='tl-resize-handle tl-resize-l';
+    resL.title='Drag to adjust trim start';
+    resL.addEventListener('mousedown',e=>{startResize(ci,'left',e);});
+    clipEl.appendChild(resL);
+
+    const resR=document.createElement('div');
+    resR.className='tl-resize-handle tl-resize-r';
+    resR.title='Drag to adjust trim end';
+    resR.addEventListener('mousedown',e=>{startResize(ci,'right',e);});
+    clipEl.appendChild(resR);
+
     clipsEl.appendChild(clipEl);
+  });
+
+  // Click background to deselect
+  clipsEl.addEventListener('click',e=>{
+    if(e.target===clipsEl||e.target.id==='tl-clips') clearClipSel();
+  });
+  // Right-click background → paste
+  clipsEl.addEventListener('contextmenu',e=>{
+    if(e.target===clipsEl||e.target.id==='tl-clips'){
+      e.preventDefault();openTlCtxMenu(e,null,null);
+    }
   });
 
   // Playhead
@@ -2635,16 +3100,14 @@ function renderTimeline(){
 
   // Ruler click to seek
   rulerEl.onclick=e=>{
-    if(playing) return; // only seek when stopped
+    if(playing) return;
     const rect=rulerEl.getBoundingClientRect();
-    const x=e.clientX-rect.left+document.getElementById('tl-scroll-wrap').scrollLeft;
-    const step=Math.max(0,Math.floor(x/tlPxPerStep));
-    timelinePos=Math.min(getTotalTimelineSteps(),step);
-    timelineVisualPos=timelinePos;
-    const ci=getClipAtStep(timelinePos);
-    if(ci){activePatternIndex=ci.clip.patternIndex;renderPatternBar();render();}
-    const ph2=document.getElementById('tl-playhead');
-    if(ph2) ph2.style.transform=`translateX(${timelinePos*tlPxPerStep}px)`;
+    const x=e.clientX-rect.left+(document.getElementById('tl-scroll-wrap')?.scrollLeft||0);
+    const step=Math.max(0,Math.min(getTotalTimelineSteps(),Math.floor(x/tlPxPerStep)));
+    timelinePos=step;timelineVisualPos=step;
+    const ci2=getClipAtStep(timelinePos);
+    if(ci2){activePatternIndex=ci2.clip.patternIndex;}
+    renderPatternBar();renderTimeline();render();
   };
 
   // Add chips
@@ -2659,6 +3122,50 @@ function renderTimeline(){
     });
   }
 }
+
+// ── Timeline context menu: copy/paste/break/remove ───────────────────────
+const tlCtxMenuEl=document.getElementById('tl-ctx-menu');
+function openTlCtxMenu(e,clipIdx,repIdx){
+  tlCtxMenuEl.innerHTML='';
+  function addOpt(label,fn,danger){
+    const o=document.createElement('div');o.className='ctx-opt'+(danger?' danger':'');o.textContent=label;
+    o.addEventListener('click',ev=>{ev.stopPropagation();fn();tlCtxMenuEl.classList.remove('show');});
+    tlCtxMenuEl.appendChild(o);
+  }
+  function addSep(){
+    const s=document.createElement('div');
+    s.style.cssText='height:1px;background:rgba(201,169,110,.12);margin:4px 0;';
+    tlCtxMenuEl.appendChild(s);
+  }
+  if(clipIdx!=null){
+    const copyCount=selectedClips.size>1&&selectedClips.has(clipIdx)?selectedClips.size:1;
+    addOpt(`Copy${copyCount>1?' ('+copyCount+')':''}`,()=>copySelectedClips(clipIdx));
+    if(clipboardClips.length>0){
+      addOpt('Paste Before',()=>pasteClips(clipIdx));
+      addOpt('Paste After',()=>pasteClips(clipIdx+1));
+    }
+    addSep();
+    if(repIdx!=null&&repIdx>0){
+      addOpt('Break Apart from Loop',()=>breakApartClip(clipIdx,repIdx));
+      addSep();
+    }
+    addOpt('Remove from Timeline',()=>{removeClip(clipIdx);clearClipSel();},true);
+  } else {
+    // Background right-click
+    if(clipboardClips.length>0){
+      addOpt(`Paste ${clipboardClips.length>1?clipboardClips.length+' clips ':''}at End`,()=>pasteClips(null));
+    } else {
+      const hint=document.createElement('div');
+      hint.style.cssText='font-family:Cinzel,serif;font-size:8px;color:rgba(201,169,110,.3);padding:6px 10px;';
+      hint.textContent='Nothing copied yet';
+      tlCtxMenuEl.appendChild(hint);
+    }
+  }
+  tlCtxMenuEl.style.left=Math.min(e.clientX,window.innerWidth-160)+'px';
+  tlCtxMenuEl.style.top=Math.min(e.clientY+4,window.innerHeight-220)+'px';
+  tlCtxMenuEl.classList.add('show');
+}
+document.addEventListener('mousedown',e=>{if(tlCtxMenuEl.classList.contains('show')&&!tlCtxMenuEl.contains(e.target))tlCtxMenuEl.classList.remove('show');});
 
 // ── Clip stats popup ─────────────────────────────────────────────────────
 const clipStatsEl=document.getElementById('clip-stats-popup');
@@ -2710,18 +3217,6 @@ document.getElementById('csp-remove').addEventListener('click',()=>{if(tlSelecte
 document.addEventListener('mousedown',e=>{if(clipStatsEl.classList.contains('show')&&!clipStatsEl.contains(e.target)&&!e.target.closest('.tl-clip'))closeClipStats();});
 
 // ── Timeline context menu (break apart) ──────────────────────────────────
-const tlCtxMenuEl=document.getElementById('tl-ctx-menu');
-function openTlCtxMenu(clipIdx,repIdx,e){
-  tlCtxMenuEl.innerHTML='';
-  const opt=document.createElement('div');opt.className='ctx-opt';opt.textContent='Break apart from loop';
-  opt.addEventListener('click',()=>{breakApartClip(clipIdx,repIdx);tlCtxMenuEl.classList.remove('show');});
-  tlCtxMenuEl.appendChild(opt);
-  tlCtxMenuEl.style.left=Math.min(e.clientX,window.innerWidth-140)+'px';
-  tlCtxMenuEl.style.top=Math.min(e.clientY+4,window.innerHeight-80)+'px';
-  tlCtxMenuEl.classList.add('show');
-}
-document.addEventListener('mousedown',e=>{if(tlCtxMenuEl.classList.contains('show')&&!tlCtxMenuEl.contains(e.target))tlCtxMenuEl.classList.remove('show');});
-
 // ── Play mode toggle ─────────────────────────────────────────────────────
 function setPlayMode(mode){
   if(playing) stopPlay();
@@ -2826,6 +3321,16 @@ function closePatternCtxMenu(){patternCtxMenuEl.classList.remove('show');}
 document.addEventListener('mousedown',e=>{
   if(patternCtxMenuEl.classList.contains('show')&&!patternCtxMenuEl.contains(e.target)) closePatternCtxMenu();
 });
+const snapBtn=document.getElementById('tl-snap-btn');
+const snapSel=document.getElementById('tl-snap-steps');
+if(snapBtn) snapBtn.addEventListener('click',()=>{
+  tlSnap.on=!tlSnap.on;
+  snapBtn.textContent=tlSnap.on?'⊠ SNAP':'⊡ SNAP';
+  snapBtn.className='tb '+(tlSnap.on?'tl-snap-on':'tl-snap-off');
+});
+if(snapSel) snapSel.addEventListener('change',e=>{
+  tlSnap.steps=parseInt(e.target.value)||4;
+});
 document.getElementById('add-pattern-btn').addEventListener('click',addPattern);
 document.getElementById('switch-mode-btn').addEventListener('click',()=>{
   patternSwitchMode=patternSwitchMode==='queue'?'instant':'queue';
@@ -2927,6 +3432,7 @@ function buildTrackRow(channel,ci,hasSolo=false){
   });
   btns.appendChild(mb);btns.appendChild(solb);btns.appendChild(shiftL);btns.appendChild(shiftR);btns.appendChild(upb);btns.appendChild(db);
   hdr.appendChild(pip);hdr.appendChild(inf);hdr.appendChild(btns);
+  hdr.addEventListener('contextmenu',e=>{e.preventDefault();openChannelCtxMenu(ci,e);});
   row.appendChild(hdr);
 
   // Steps
@@ -2988,6 +3494,43 @@ function buildMelodyCell(channel,ci,si){
   }
   el.addEventListener('click',()=>{if(!channel.suit){openInstPicker(ci,{clientX:100,clientY:200});return;}openCardPicker(ci,si);});
   el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ci,si,e,'melody');});
+  // ── Card drag-and-drop ──
+  if(n!==null&&n!==undefined){
+    el.draggable=true;
+    el.addEventListener('dragstart',e=>{
+      dragCardState={
+        fromCi:ci,fromSi:si,
+        n:pd.steps[si],
+        oct:(pd.stepOctaves&&pd.stepOctaves[si])||0,
+        vel:(pd.stepVelocities&&pd.stepVelocities[si]!==undefined)?pd.stepVelocities[si]:100,
+        copy:e.ctrlKey||e.metaKey
+      };
+      e.dataTransfer.effectAllowed=dragCardState.copy?'copy':'move';
+      e.dataTransfer.setData('text/plain','card');
+      setTimeout(()=>el.classList.add('card-dragging'),0);
+    });
+    el.addEventListener('dragend',()=>{
+      el.classList.remove('card-dragging');
+      document.querySelectorAll('.card-drag-over').forEach(c=>c.classList.remove('card-drag-over'));
+      dragCardState=null;
+    });
+  }
+  // All melody cells are valid drop targets
+  el.addEventListener('dragover',e=>{
+    if(!dragCardState) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect=dragCardState.copy?'copy':'move';
+    document.querySelectorAll('.card-drag-over').forEach(c=>c.classList.remove('card-drag-over'));
+    el.classList.add('card-drag-over');
+  });
+  el.addEventListener('dragleave',()=>el.classList.remove('card-drag-over'));
+  el.addEventListener('drop',e=>{
+    e.preventDefault();
+    if(!dragCardState) return;
+    el.classList.remove('card-drag-over');
+    dropCard(ci,si,dragCardState);
+    dragCardState=null;
+  });
   return el;
 }
 
