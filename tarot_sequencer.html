@@ -124,9 +124,16 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 #tl-playhead-head{width:14px;height:12px;background:rgba(255,255,220,.95);clip-path:polygon(50% 100%,0 0,100% 0);margin-left:-6px;filter:drop-shadow(0 0 3px rgba(255,255,180,.8));}
 #tl-playhead-line{width:2px;height:84px;background:rgba(255,255,200,.75);margin-left:-1px;box-shadow:0 0 4px rgba(255,255,180,.5);}
 /* Clip stats popup */
-#clip-stats-popup{position:fixed;z-index:310;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:14px;box-shadow:0 16px 48px rgba(0,0,0,.95);display:none;min-width:240px;max-width:90vw;}
+#clip-stats-popup{position:fixed;z-index:310;background:linear-gradient(150deg,#130f22,#09071a);border:1px solid rgba(201,169,110,.35);border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,.95);display:none;min-width:240px;max-width:90vw;overflow:hidden;}
 #clip-stats-popup.show{display:block;}
-#csp-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+#csp-drag-bar{height:26px;display:flex;align-items:center;gap:6px;padding:0 8px;background:rgba(201,169,110,.07);border-bottom:1px solid rgba(201,169,110,.12);cursor:grab;user-select:none;flex-shrink:0;}
+#csp-drag-bar:active{cursor:grabbing;}
+.csp-drag-dots{font-size:8px;color:rgba(201,169,110,.35);letter-spacing:3px;flex:1;}
+#csp-pin-btn{font-size:7.5px;padding:2px 6px;letter-spacing:.07em;}
+#csp-pin-btn.pinned{border-color:rgba(201,169,110,.6);color:var(--gold);background:var(--gf);}
+#csp-head{display:flex;align-items:center;gap:8px;padding:10px 14px 6px;}
+#csp-body{padding:0 14px 14px;}
+
 #csp-num{font-family:'Cinzel',serif;font-size:10px;color:rgba(255,255,255,.4);flex-shrink:0;}
 #csp-name-wrap{flex:1;}
 #csp-name{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);cursor:text;}
@@ -619,11 +626,15 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 </div>
 
 <div id="clip-stats-popup">
+  <div id="csp-drag-bar">
+    <span class="csp-drag-dots">⠿⠿⠿</span>
+    <button id="csp-pin-btn" class="tb" title="Pin in place — popup won't move when you click other patterns">⊙ FLOAT</button>
+    <button id="csp-close" class="tb" title="Close">✕</button>
+  </div>
   <div id="csp-head">
     <span id="csp-num"></span>
     <span id="csp-name-wrap"><span id="csp-name"></span></span>
     <div id="csp-swatch"></div>
-    <button id="csp-close" class="tb">✕</button>
   </div>
   <div id="csp-body">
     <div class="csp-row">
@@ -3115,6 +3126,12 @@ function renderTimeline(){
     gearBtn.className='tl-gear-btn';gearBtn.textContent='⚙';gearBtn.title='Clip settings';
     gearBtn.addEventListener('click',e=>{
       e.stopPropagation();
+      if(clipStatsEl.classList.contains('show')){
+        // Any gear click while open → close
+        closeClipStats();
+        return;
+      }
+      // Closed → open at this gear's position
       if(!selectedClips.has(ci)) toggleClipSel(ci,false);
       openClipStats(ci,clipEl);
       if(pat){activePatternIndex=clip.patternIndex;renderPatternBar();render();}
@@ -3144,6 +3161,8 @@ function renderTimeline(){
         e.stopPropagation();
         toggleClipSel(ci,!!e.shiftKey);
         if(pat){activePatternIndex=clip.patternIndex;renderPatternBar();render();}
+        // If stats popup is open, update its content in place (respects pin position)
+        if(clipStatsEl.classList.contains('show')) populateClipStats(ci);
       });
       rep.addEventListener('contextmenu',e=>{
         e.preventDefault();
@@ -3256,23 +3275,22 @@ document.addEventListener('mousedown',e=>{if(tlCtxMenuEl.classList.contains('sho
 
 // ── Clip stats popup ─────────────────────────────────────────────────────
 const clipStatsEl=document.getElementById('clip-stats-popup');
-function openClipStats(clipIdx,clipDomEl){
+// ── Clip stats popup: state ───────────────────────────────────────────────
+let cspPinned=false;      // true = popup stays put; false = opens below gear each time
+let cspDragging=false;
+let cspDragStart={x:0,y:0,left:0,top:0};
+
+function populateClipStats(clipIdx){
   tlSelectedClipIdx=clipIdx;
   const clip=arrangementClips[clipIdx];
-  const pat=patterns[clip.patternIndex];
-  // Position near clicked clip
-  const rect=clipDomEl.getBoundingClientRect();
-  clipStatsEl.style.top=Math.max(10,rect.bottom+6)+'px';
-  clipStatsEl.style.left=Math.max(10,Math.min(window.innerWidth-270,rect.left))+'px';
-  // Populate
+  const pat=patterns[clip?.patternIndex];
   document.getElementById('csp-num').textContent=pat?'#'+String(pat.number||'').padStart(2,'0'):'';
   const nameEl=document.getElementById('csp-name');
   nameEl.textContent=pat?pat.name:'[deleted]';
   nameEl.style.color=pat?patternBorderCss(pat):undefined;
-  // Make name editable on click
   nameEl.onclick=()=>{
     nameEl.contentEditable='true';nameEl.classList.add('editing');nameEl.focus();
-    const sel=window.getSelection();sel.selectAllChildren(nameEl);
+    window.getSelection().selectAllChildren(nameEl);
   };
   nameEl.onblur=()=>{
     nameEl.contentEditable='false';nameEl.classList.remove('editing');
@@ -3280,7 +3298,7 @@ function openClipStats(clipIdx,clipDomEl){
   };
   nameEl.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();nameEl.blur();}};
   const swatch=document.getElementById('csp-swatch');
-  swatch.style.background=pat?pat.color?pat.color.border:'#c9a96e':'#888';
+  swatch.style.background=pat&&pat.color?pat.color.border:'#c9a96e';
   document.getElementById('csp-rep-val').textContent='×'+clip.repeatCount;
   document.getElementById('csp-trim-start').value=clip.trimStart||0;
   const end=clip.trimEnd!=null?clip.trimEnd:(pat?pat.stepCount:16);
@@ -3289,11 +3307,60 @@ function openClipStats(clipIdx,clipDomEl){
   const opVal=clip.opacity!=null?clip.opacity:100;
   document.getElementById('csp-opacity').value=opVal;
   document.getElementById('csp-opacity-val').textContent=opVal+'%';
+}
+
+function openClipStats(clipIdx,clipDomEl){
+  populateClipStats(clipIdx);
+  // Only reposition when floating — pinned popup stays where the user put it
+  if(!cspPinned){
+    const rect=clipDomEl.getBoundingClientRect();
+    clipStatsEl.style.top=Math.max(10,rect.bottom+6)+'px';
+    clipStatsEl.style.left=Math.max(10,Math.min(window.innerWidth-270,rect.left))+'px';
+  }
   clipStatsEl.classList.add('show');
 }
-function closeClipStats(){clipStatsEl.classList.remove('show');tlSelectedClipIdx=null;}
-// Stats popup listeners
-document.getElementById('csp-close').addEventListener('click',closeClipStats);
+function closeClipStats(){
+  clipStatsEl.classList.remove('show');
+  tlSelectedClipIdx=null;
+}
+
+// ── Stats popup listeners ─────────────────────────────────────────────────
+// Close resets to float so next open positions fresh
+document.getElementById('csp-close').addEventListener('click',()=>{
+  closeClipStats();
+  cspPinned=false;
+  const pinBtn=document.getElementById('csp-pin-btn');
+  pinBtn.textContent='⊙ FLOAT';pinBtn.classList.remove('pinned');
+});
+// Pin toggle
+document.getElementById('csp-pin-btn').addEventListener('click',()=>{
+  cspPinned=!cspPinned;
+  const btn=document.getElementById('csp-pin-btn');
+  btn.textContent=cspPinned?'⊕ PINNED':'⊙ FLOAT';
+  btn.classList.toggle('pinned',cspPinned);
+});
+// Drag bar — drag to reposition; auto-pins on drag
+document.getElementById('csp-drag-bar').addEventListener('mousedown',e=>{
+  if(e.target.closest('button')) return;
+  e.preventDefault();
+  cspDragging=true;
+  const r=clipStatsEl.getBoundingClientRect();
+  cspDragStart={x:e.clientX,y:e.clientY,left:r.left,top:r.top};
+});
+document.addEventListener('mousemove',e=>{
+  if(!cspDragging) return;
+  const newLeft=Math.max(0,Math.min(window.innerWidth-280,cspDragStart.left+(e.clientX-cspDragStart.x)));
+  const newTop=Math.max(0,Math.min(window.innerHeight-120,cspDragStart.top+(e.clientY-cspDragStart.y)));
+  clipStatsEl.style.left=newLeft+'px';
+  clipStatsEl.style.top=newTop+'px';
+  if(!cspPinned){
+    cspPinned=true;
+    const btn=document.getElementById('csp-pin-btn');
+    btn.textContent='⊕ PINNED';btn.classList.add('pinned');
+  }
+});
+document.addEventListener('mouseup',()=>{cspDragging=false;});
+
 document.getElementById('csp-rep-dn').addEventListener('click',()=>{if(tlSelectedClipIdx===null)return;setClipRepeat(tlSelectedClipIdx,arrangementClips[tlSelectedClipIdx].repeatCount-1);document.getElementById('csp-rep-val').textContent='×'+arrangementClips[tlSelectedClipIdx].repeatCount;});
 document.getElementById('csp-rep-up').addEventListener('click',()=>{if(tlSelectedClipIdx===null)return;setClipRepeat(tlSelectedClipIdx,arrangementClips[tlSelectedClipIdx].repeatCount+1);document.getElementById('csp-rep-val').textContent='×'+arrangementClips[tlSelectedClipIdx].repeatCount;});
 document.getElementById('csp-trim-start').addEventListener('change',e=>{if(tlSelectedClipIdx===null)return;setClipTrimStart(tlSelectedClipIdx,parseInt(e.target.value)||0);});
