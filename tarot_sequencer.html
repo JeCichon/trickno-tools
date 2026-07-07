@@ -320,6 +320,8 @@ body{background:var(--bg);font-family:'EB Garamond',serif;color:var(--text);min-
 
 /* MELODY STEP CELLS */
 .step-cell{width:var(--sw);min-width:var(--sw);height:var(--sh);border-radius:4px;border:1px solid rgba(201,169,110,.1);background:rgba(0,0,0,.45);position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:3px;overflow:hidden;flex-shrink:0;transition:transform .07s,border-color .1s,box-shadow .1s;user-select:none;}
+.step-cell.step-selected{outline:2px solid rgba(201,169,110,.8)!important;outline-offset:-2px;z-index:2;}
+.step-cell.step-selected::after{content:'';position:absolute;inset:0;background:rgba(201,169,110,.12);pointer-events:none;border-radius:3px;}
 .step-cell.filled[draggable="true"]{cursor:grab;}
 .step-cell.card-dragging{opacity:.35;cursor:grabbing;}
 .step-cell.card-drag-over{box-shadow:inset 0 0 0 2px var(--gold)!important;border-color:var(--gold)!important;}
@@ -1944,6 +1946,71 @@ function newChannelData(suit,stepCount){
     drumSteps:isDrum?DRUM_SLOTS.map(()=>new Array(stepCount).fill(false)):null
   };
 }
+// ── Step cell multi-select ────────────────────────────────────────────────
+let stepSelection={ci:null,steps:new Set(),lastSi:null};
+let stepClipboard=null; // {ci, minSi, items:[{offset,n,oct,vel}]}
+
+function toggleStepSel(ci,si){
+  if(stepSelection.ci!==ci){stepSelection={ci,steps:new Set(),lastSi:null};}
+  if(stepSelection.steps.has(si)) stepSelection.steps.delete(si);
+  else stepSelection.steps.add(si);
+  stepSelection.lastSi=si;
+  updateStepSelVis();
+}
+function rangeSelectSteps(ci,si){
+  if(stepSelection.ci!==ci||stepSelection.steps.size===0){
+    stepSelection={ci,steps:new Set([si]),lastSi:si};
+  } else {
+    const from=stepSelection.lastSi??si;
+    const mn=Math.min(from,si),mx=Math.max(from,si);
+    for(let i=mn;i<=mx;i++) stepSelection.steps.add(i);
+  }
+  updateStepSelVis();
+}
+function clearStepSel(){
+  stepSelection={ci:null,steps:new Set(),lastSi:null};
+  document.querySelectorAll('.step-cell.step-selected').forEach(el=>el.classList.remove('step-selected'));
+}
+function updateStepSelVis(){
+  document.querySelectorAll('.step-cell').forEach(el=>{
+    const elCi=parseInt(el.dataset.ci),elSi=parseInt(el.dataset.step);
+    el.classList.toggle('step-selected',stepSelection.ci===elCi&&stepSelection.steps.has(elSi));
+  });
+}
+function copyStepSel(){
+  if(!stepSelection.steps.size) return;
+  const pat=patterns[activePatternIndex];
+  const pd=pat.channelData[stepSelection.ci];
+  const sorted=[...stepSelection.steps].sort((a,b)=>a-b);
+  const minSi=sorted[0];
+  stepClipboard={
+    ci:stepSelection.ci,minSi,
+    items:sorted.map(si=>({
+      offset:si-minSi,
+      n:pd.steps?.[si]??null,
+      oct:pd.stepOctaves?.[si]??0,
+      vel:pd.stepVelocities?.[si]??100
+    }))
+  };
+}
+function pasteStepClipboard(toCi,startSi){
+  if(!stepClipboard) return;
+  pushHistory();
+  const pat=patterns[activePatternIndex];
+  const pd=pat.channelData[toCi];
+  const sc=pat.stepCount;
+  if(!pd.stepOctaves)    pd.stepOctaves   =new Array(sc).fill(0);
+  if(!pd.stepVelocities) pd.stepVelocities=new Array(sc).fill(100);
+  for(const item of stepClipboard.items){
+    const dest=startSi+item.offset;
+    if(dest<0||dest>=sc) continue;
+    pd.steps[dest]=item.n;
+    pd.stepOctaves[dest]=item.oct;
+    pd.stepVelocities[dest]=item.vel;
+  }
+  render();saveState();
+}
+
 // ── Card drag-and-drop state ─────────────────────────────────────────────
 let dragCardState=null;  // {fromCi,fromSi,n,oct,vel,copy}
 
@@ -2251,6 +2318,20 @@ function openStepCtxMenu(ti,si,e,kind){
   }
 
   if(kind==='melody'){
+    // ── Multi-select copy / paste ──
+    const hasSel=stepSelection.ci===ti&&stepSelection.steps.size>0;
+    if(hasSel){
+      addOpt(`Copy Selection (${stepSelection.steps.size})`,()=>copyStepSel());
+    }
+    if(stepClipboard){
+      addOpt(`Paste Here`,()=>pasteStepClipboard(ti,si));
+    }
+    if(hasSel){
+      addOpt('Clear Selection',()=>clearStepSel(),false);
+    }
+    if(hasSel||stepClipboard){
+      const sep=document.createElement('div');sep.className='ctx-divider';ctxMenuEl.appendChild(sep);
+    }
     if(hasNote) addOpt('Copy',()=>{melodyClipboard={
       n:pd.steps[si],
       oct:(pd.stepOctaves&&pd.stepOctaves[si])||0,
@@ -2958,18 +3039,24 @@ document.addEventListener('mouseup',e=>{
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){
-    if(selectedClips.size>0){
-      copySelectedClips([...selectedClips][0]);
-      e.preventDefault();
+    if(stepSelection.steps.size>0){
+      copyStepSel();e.preventDefault();
+    } else if(selectedClips.size>0){
+      copySelectedClips([...selectedClips][0]);e.preventDefault();
     }
   }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){
-    if(clipboardClips.length>0){
+    if(stepClipboard){
+      // Paste to clipboard's channel at step 0, or at the first selected step if there's a selection on the same channel
+      const startSi=(stepSelection.ci===stepClipboard.ci&&stepSelection.steps.size>0)
+        ?Math.min(...stepSelection.steps):0;
+      pasteStepClipboard(stepClipboard.ci,startSi);e.preventDefault();
+    } else if(clipboardClips.length>0){
       const after=selectedClips.size>0?Math.max(...selectedClips)+1:null;
-      pasteClips(after);
-      e.preventDefault();
+      pasteClips(after);e.preventDefault();
     }
   }
+  if(e.key==='Escape') clearStepSel();
 });
 
 // ── Timeline render ──────────────────────────────────────────────────────
@@ -3492,7 +3579,17 @@ function buildMelodyCell(channel,ci,si){
       }
     }
   }
-  el.addEventListener('click',()=>{if(!channel.suit){openInstPicker(ci,{clientX:100,clientY:200});return;}openCardPicker(ci,si);});
+  // Apply selection state at build time (survives render() calls)
+  if(stepSelection.ci===ci&&stepSelection.steps.has(si)) el.classList.add('step-selected');
+
+  el.addEventListener('click',e=>{
+    if(e.ctrlKey||e.metaKey){e.preventDefault();e.stopPropagation();toggleStepSel(ci,si);return;}
+    if(e.shiftKey){e.preventDefault();e.stopPropagation();rangeSelectSteps(ci,si);return;}
+    // Normal click: clear selection, then open picker
+    if(stepSelection.steps.size>0){clearStepSel();}
+    if(!channel.suit){openInstPicker(ci,{clientX:100,clientY:200});return;}
+    openCardPicker(ci,si);
+  });
   el.addEventListener('contextmenu',e=>{e.preventDefault();openStepCtxMenu(ci,si,e,'melody');});
   // ── Card drag-and-drop ──
   if(n!==null&&n!==undefined){
