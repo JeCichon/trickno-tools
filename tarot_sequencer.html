@@ -2005,20 +2005,39 @@ function scheduleCardNote(n,t,dur,vol=0.8,octShift=0,effColor=null,pan=0,clipBpm
     };
     const env=blendAdsr(cmykEnv,userEnv,ua.blend||'normal');
     const A=Math.max(0.003,env.attack),D=Math.max(0.003,env.decay);
-    const sV=Math.max(0,Math.min(1,env.sustain)),R=Math.max(0.003,env.release);
-    const pk=0.90*vol;
+    let sV=Math.max(0,Math.min(1,env.sustain)),R_e=Math.max(0.003,env.release);
+    let pk=0.90*vol;
+    // ── RGB Particle Mode (opt-in, default OFF — existing songs unchanged) ────
+    const rp=channel?.effects?.rgbParticle;
+    const physOn=channel?.effects?.physicsOn;
+    if(physOn&&rp&&rp.on){
+      const depth=rp.depth/100;
+      const rn=col.r/255,gn=col.g/255,bn=col.b/255;
+      pk=Math.max(0,pk*(1+(rn-0.5)*depth*0.6));
+      sV=Math.min(1,sV+bn*depth*0.35);
+      pan=Math.max(-1,Math.min(1,pan+(gn-0.5)*depth*0.4)); // G→Pan at 40% of depth
+    }
+    // Gravity: pulls amplitude down during sustain (Layer 1 — volume only)
+    const grav=channel?.effects?.gravity;
+    let gravDecay=0;
+    if(physOn&&grav&&grav.on){
+      const gNorm=grav.value/9.81; // normalized to Earth=1
+      gravDecay=Math.min(0.92,gNorm*(grav.depth/100)*0.22);
+    }
     const relStart=Math.max(t+A+D,t+dur-0.003);
     g.gain.setValueAtTime(0,t);
     g.gain.linearRampToValueAtTime(pk,t+A);
     g.gain.linearRampToValueAtTime(pk*sV,t+A+D);
-    g.gain.setValueAtTime(pk*sV,relStart);
-    g.gain.linearRampToValueAtTime(0,relStart+R);
-    osc.connect(g);g.connect(panner);osc.start(t);osc.stop(relStart+R+0.05);
+    // Gravity: sustain ramps down instead of holding flat
+    const sV_end=pk*Math.max(0,sV*(1-gravDecay));
+    g.gain.linearRampToValueAtTime(sV_end,relStart);
+    g.gain.linearRampToValueAtTime(0,relStart+R_e);
+    osc.connect(g);g.connect(panner);osc.start(t);osc.stop(relStart+R_e+0.05);
     if(card.suit==='major'){
       const o2=a.createOscillator(),g2=a.createGain();o2.type='triangle';o2.frequency.value=freq*2;
       g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(pk*0.14,t+A);
-      g2.gain.setValueAtTime(pk*0.14*sV,relStart);g2.gain.linearRampToValueAtTime(0,relStart+R);
-      o2.connect(g2);g2.connect(panner);o2.start(t);o2.stop(relStart+R+0.05);
+      g2.gain.setValueAtTime(pk*0.14*sV/Math.max(0.01,pk),relStart);g2.gain.linearRampToValueAtTime(0,relStart+R_e);
+      o2.connect(g2);g2.connect(panner);o2.start(t);o2.stop(relStart+R_e+0.05);
     }
   } else {
     // ── Original compact envelope (effects OFF — preserves existing song character) ──
@@ -2026,10 +2045,28 @@ function scheduleCardNote(n,t,dur,vol=0.8,octShift=0,effColor=null,pan=0,clipBpm
     // CMYK still shapes the envelope — just subtly and percussively.
     const cmyk=toCMYK(col.r,col.g,col.b);
     const A=0.004+cmyk.c*0.04,D=0.02+cmyk.m*0.08;
-    const sV=0.25+cmyk.y*0.4,R=0.03+cmyk.k*0.15,pk=0.70*vol;
+    let sV=0.25+cmyk.y*0.4,R=0.03+cmyk.k*0.15;
+    let pk=0.70*vol;
+    // RGB Particle Mode applies even in compact mode (opt-in, default OFF)
+    const rp2=channel?.effects?.rgbParticle;
+    const physOn2=channel?.effects?.physicsOn;
+    if(physOn2&&rp2&&rp2.on){
+      const depth=rp2.depth/100;
+      const rn=col.r/255,gn=col.g/255,bn=col.b/255;
+      pk=Math.max(0,pk*(1+(rn-0.5)*depth*0.6));
+      sV=Math.min(1,sV+bn*depth*0.35);
+      pan=Math.max(-1,Math.min(1,pan+(gn-0.5)*depth*0.4));
+    }
+    const grav2=channel?.effects?.gravity;
+    let gravDecay2=0;
+    if(physOn2&&grav2&&grav2.on){
+      const gNorm=grav2.value/9.81;
+      gravDecay2=Math.min(0.92,gNorm*(grav2.depth/100)*0.22);
+    }
     const relS=Math.max(t+A+D,t+dur-R);
+    const sV_end2=pk*Math.max(0,sV*(1-gravDecay2));
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+A);
-    g.gain.linearRampToValueAtTime(pk*sV,t+A+D);g.gain.setValueAtTime(pk*sV,relS);
+    g.gain.linearRampToValueAtTime(pk*sV,t+A+D);g.gain.linearRampToValueAtTime(sV_end2,relS);
     g.gain.linearRampToValueAtTime(0,t+dur);
     osc.connect(g);g.connect(panner);osc.start(t);osc.stop(t+dur+0.05);
     if(card.suit==='major'){
@@ -2118,7 +2155,10 @@ function newChannel(suit=null){
     muted:false,solo:false,vol:0.8,pan:0,
     clockDiv:1,
     effects:{
-      adsr:{on:false,blend:'normal',attack:10,decay:100,sustain:70,release:300}
+      adsr:{on:false,blend:'normal',attack:10,decay:100,sustain:70,release:300},
+      rgbParticle:{on:false,depth:50},
+      gravity:{on:false,value:9.81,depth:50},
+      physicsOn:false
     }
   };
 }
@@ -3254,10 +3294,10 @@ function drawEnvelopeCanvas(canvas,channel,ci){
   // Stage labels
   ctx2.fillStyle='rgba(201,169,110,.4)';ctx2.font='9px Cinzel,serif';
   const labelY=h-2;
-  ctx2.fillText('Acc',xO+1,labelY);
-  ctx2.fillText('Res',xA+2,labelY);
-  ctx2.fillText('Mom',xD+2,labelY);
-  ctx2.fillText('Iner',xS+2,labelY);
+  ctx2.fillText('Force',xO+1,labelY);
+  ctx2.fillText('Resist',xA+2,labelY);
+  ctx2.fillText('Term.V',xD+2,labelY);
+  ctx2.fillText('Inertia',xS+2,labelY);
   // Vertical divider lines between stages
   [[xA,'A'],[xD,'D'],[xS,'S']].forEach(([x])=>{
     ctx2.beginPath();ctx2.moveTo(x,pad);ctx2.lineTo(x,h-pad-12);
@@ -3307,7 +3347,7 @@ function buildEffectsPanel(channel,ci){
   const tog=document.createElement('button');tog.className='tb effects-toggle'+(ua.on?' on':'');
   tog.textContent=ua.on?'ON':'OFF';
   tog.addEventListener('click',()=>{pushHistory();ua.on=!ua.on;render();saveState();});
-  const title=document.createElement('span');title.className='effects-title';title.textContent='⚗ ADSR ENVELOPE';
+  const title=document.createElement('span');title.className='effects-title';title.textContent='⚗ FRTVI';
   const blendSel=document.createElement('select');blendSel.className='effects-blend-sel';
   [['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay']].forEach(([v,l])=>{
     const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=ua.blend===v;
@@ -3319,9 +3359,9 @@ function buildEffectsPanel(channel,ci){
   // ADSR sliders with synced number inputs
   const slidersDiv=document.createElement('div');slidersDiv.className='effects-sliders';
   const defs=[
-    {key:'attack', main:'Acceleration', sub:'(Attack)',  min:0,max:2000,unit:'ms'},
+    {key:'attack', main:'Force',            sub:'(Attack)',          min:0,max:2000,unit:'ms'},
     {key:'decay',  main:'Resistance',   sub:'(Decay)',   min:0,max:2000,unit:'ms'},
-    {key:'sustain',main:'Momentum',     sub:'(Sustain)', min:0,max:100, unit:'%'},
+    {key:'sustain',main:'Terminal Velocity',sub:'(Sustain)',        min:0,max:100, unit:'%'},
     {key:'release',main:'Inertia',      sub:'(Release)', min:0,max:3000,unit:'ms'},
   ];
   let canvas;
@@ -3355,7 +3395,118 @@ function buildEffectsPanel(channel,ci){
   canvas=document.createElement('canvas');canvas.className='effects-canvas';
   canvas.width=280;canvas.height=72;
   setTimeout(()=>drawEnvelopeCanvas(canvas,channel,ci),10);
-  panel.appendChild(canvas);
+  // ── Physics Engine section ────────────────────────────────────────────
+  if(!channel.effects.physicsOn===undefined) channel.effects.physicsOn=false;
+  if(!channel.effects.rgbParticle) channel.effects.rgbParticle={on:false,depth:50};
+  if(!channel.effects.gravity) channel.effects.gravity={on:false,value:9.81,depth:50};
+  const rp=channel.effects.rgbParticle;
+  const grav=channel.effects.gravity;
+
+  // ── Master Physics Toggle ──────────────────────────────────────────────
+  const physWrap=document.createElement('div');
+  physWrap.style.cssText='border-top:1px solid rgba(201,169,110,.12);margin-top:4px;padding-top:8px;';
+  const physHdr=document.createElement('div');physHdr.className='effects-panel-hdr';
+  const physTog=document.createElement('button');
+  physTog.className='tb effects-toggle'+(channel.effects.physicsOn?' on':'');
+  physTog.textContent=channel.effects.physicsOn?'ON':'OFF';
+  const physTitle=document.createElement('span');physTitle.className='effects-title';
+  physTitle.textContent='⚛ PHYSICS ENGINE';
+  physTitle.title='Master toggle for all physics effects. Individual toggles below control each effect.';
+  physTog.addEventListener('click',()=>{
+    pushHistory();
+    channel.effects.physicsOn=!channel.effects.physicsOn;
+    physTog.textContent=channel.effects.physicsOn?'ON':'OFF';
+    physTog.classList.toggle('on',channel.effects.physicsOn);
+    physBody.style.opacity=channel.effects.physicsOn?'1':'0.45';
+    saveState();
+  });
+  physHdr.append(physTog,physTitle);physWrap.appendChild(physHdr);
+
+  // Physics body — dims when master is OFF
+  const physBody=document.createElement('div');
+  physBody.style.cssText='transition:opacity .2s;'+(channel.effects.physicsOn?'opacity:1':'opacity:0.45');
+
+  // ── RGB Particle section ───────────────────────────────────────────────
+  const rpHdr=document.createElement('div');rpHdr.className='effects-panel-hdr';
+  rpHdr.style.marginTop='8px';
+  const rpTog=document.createElement('button');rpTog.className='tb effects-toggle'+(rp.on?' on':'');
+  rpTog.textContent=rp.on?'ON':'OFF';
+  rpTog.addEventListener('click',()=>{pushHistory();rp.on=!rp.on;render();saveState();});
+  const rpTitle=document.createElement('span');rpTitle.className='effects-title';
+  rpTitle.textContent='◉ RGB PARTICLE';
+  rpTitle.title='R→Force · B→Terminal Velocity · G→Pan (40% of depth)';
+  rpHdr.append(rpTog,rpTitle);physBody.appendChild(rpHdr);
+
+  const rpRow=document.createElement('div');rpRow.className='effects-slider-row';
+  const rpLbl=document.createElement('div');rpLbl.className='effects-slider-label';
+  rpLbl.innerHTML='<span class="effects-lbl-main">Particle Influence</span><span class="effects-lbl-sub">R→Force · B→Term.V · G→Pan</span>';
+  const rpNum=document.createElement('input');rpNum.type='number';rpNum.min=0;rpNum.max=100;
+  rpNum.value=rp.depth;rpNum.className='effects-num-input';
+  const rpSlider=document.createElement('input');rpSlider.type='range';rpSlider.min=0;rpSlider.max=100;
+  rpSlider.value=rp.depth;rpSlider.className='effects-slider';
+  rpSlider.addEventListener('input',e=>{rp.depth=parseFloat(e.target.value);rpNum.value=e.target.value;});
+  rpSlider.addEventListener('change',()=>saveState());
+  rpNum.addEventListener('input',e=>{const v=Math.max(0,Math.min(100,parseFloat(e.target.value)||0));rp.depth=v;rpSlider.value=v;});
+  rpNum.addEventListener('change',()=>saveState());
+  rpRow.append(rpLbl,rpNum,rpSlider);physBody.appendChild(rpRow);
+
+  // ── Gravity section ────────────────────────────────────────────────────
+  const gravHdr=document.createElement('div');gravHdr.className='effects-panel-hdr';
+  gravHdr.style.marginTop='10px';
+  const gravTog=document.createElement('button');gravTog.className='tb effects-toggle'+(grav.on?' on':'');
+  gravTog.textContent=grav.on?'ON':'OFF';
+  gravTog.addEventListener('click',()=>{pushHistory();grav.on=!grav.on;render();saveState();});
+  const gravTitle=document.createElement('span');gravTitle.className='effects-title';
+  gravTitle.textContent='↓ GRAVITY';
+  gravTitle.title='Pulls amplitude downward during sustain — note falls instead of holding flat';
+  gravHdr.append(gravTog,gravTitle);physBody.appendChild(gravHdr);
+
+  // Gravity presets dropdown + value input
+  const gravPresetRow=document.createElement('div');gravPresetRow.className='effects-slider-row';
+  gravPresetRow.style.gap='6px';
+  const gravSel=document.createElement('select');gravSel.className='effects-blend-sel';gravSel.style.flex='1';
+  const GRAV_PRESETS=[
+    {label:'🌙 Moon',v:1.62},{label:'♂ Mars',v:3.72},{label:'🌍 Earth',v:9.81},
+    {label:'♃ Jupiter',v:24.8},{label:'☉ Sun',v:274},{label:'✎ Custom',v:null}
+  ];
+  GRAV_PRESETS.forEach(p=>{
+    const o=document.createElement('option');o.value=p.v??'custom';o.textContent=p.label;
+    if(p.v&&Math.abs(p.v-grav.value)<0.01) o.selected=true;
+    gravSel.appendChild(o);
+  });
+  const gravValInp=document.createElement('input');gravValInp.type='number';
+  gravValInp.min=0.1;gravValInp.step=0.01;gravValInp.value=grav.value.toFixed(2);
+  gravValInp.className='effects-num-input';gravValInp.style.width='64px';
+  gravValInp.title='m/s² (Earth = 9.81)';
+  gravSel.addEventListener('change',e=>{
+    const v=parseFloat(e.target.value);
+    if(!isNaN(v)){grav.value=v;gravValInp.value=v.toFixed(2);saveState();}
+  });
+  gravValInp.addEventListener('input',e=>{
+    const v=parseFloat(e.target.value)||9.81;
+    grav.value=v;
+    // Reset preset to Custom if no preset matches
+    [...gravSel.options].forEach(o=>o.selected=Math.abs(parseFloat(o.value)-v)<0.01);
+    saveState();
+  });
+  gravPresetRow.append(gravSel,gravValInp);physBody.appendChild(gravPresetRow);
+
+  // Gravity depth slider
+  const gravRow=document.createElement('div');gravRow.className='effects-slider-row';
+  const gravLbl=document.createElement('div');gravLbl.className='effects-slider-label';
+  gravLbl.innerHTML='<span class="effects-lbl-main">Field Strength</span><span class="effects-lbl-sub">How strongly gravity pulls</span>';
+  const gravNum=document.createElement('input');gravNum.type='number';gravNum.min=0;gravNum.max=100;
+  gravNum.value=grav.depth;gravNum.className='effects-num-input';
+  const gravSlider=document.createElement('input');gravSlider.type='range';gravSlider.min=0;gravSlider.max=100;
+  gravSlider.value=grav.depth;gravSlider.className='effects-slider';
+  gravSlider.addEventListener('input',e=>{grav.depth=parseFloat(e.target.value);gravNum.value=e.target.value;});
+  gravSlider.addEventListener('change',()=>saveState());
+  gravNum.addEventListener('input',e=>{const v=Math.max(0,Math.min(100,parseFloat(e.target.value)||0));grav.depth=v;gravSlider.value=v;});
+  gravNum.addEventListener('change',()=>saveState());
+  gravRow.append(gravLbl,gravNum,gravSlider);physBody.appendChild(gravRow);
+
+  physWrap.appendChild(physBody);
+  panel.appendChild(physWrap);
   return panel;
 }
 
