@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trickno · Color Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+
+:root{
+  --bg:#06040e; --gold:#c9a96e; --panel-bg:rgba(0,0,0,0.4);
+  --border:rgba(201,169,110,0.18); --text:#ddd8c4; --dim:#7a6f5a;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{
+  background:var(--bg); color:var(--text); font-family:'EB Garamond',serif;
+  min-height:100vh; padding-bottom:60px;
+}
+
+/* ── HEADER ── */
+#header{ text-align:center; padding:16px 0 6px; border-bottom:1px solid var(--border); }
+#header h1{ font-family:'Cinzel',serif; font-size:20px; letter-spacing:0.32em; color:var(--gold); font-weight:600; }
+#header p{ font-size:16px; letter-spacing:0.1em; color:var(--dim); margin-top:4px; font-style:italic; }
+
+/* ── TWO-COLUMN LAYOUT WITH SPLITTER ── */
+#lab-body{ display:flex; align-items:flex-start; }
+
+#left-col{
+  display:flex; flex-direction:column; gap:18px; padding:18px;
+  width:340px; min-width:260px; flex-shrink:0;
+  position:sticky; top:0; max-height:100vh; overflow-y:auto;
+}
+
+.panel-card{
+  background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; padding:16px;
+  width:100%;
+}
+.panel-card-title{
+  font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.22em; color:var(--dim);
+  text-transform:uppercase; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:6px;
+}
+
+#splitter{
+  width:16px; align-self:stretch; flex-shrink:0; cursor:col-resize; position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.splitter-line{
+  position:absolute; top:0; bottom:0; left:50%; width:4px; transform:translateX(-50%);
+  background:var(--gold); opacity:0.5; border-radius:2px; transition:opacity 0.15s;
+}
+#splitter:hover .splitter-line, #splitter.dragging .splitter-line{ opacity:0.95; }
+.splitter-handle{
+  position:relative; z-index:2; width:20px; height:48px; border-radius:5px;
+  background:linear-gradient(180deg,#1c1732,#0c091b); border:2px solid var(--gold);
+  display:flex; align-items:center; justify-content:center; color:var(--gold);
+  font-size:14px; letter-spacing:0; pointer-events:none;
+}
+
+#right-col{ flex:1; min-width:0; }
+
+#wheel-wrap{ display:flex; justify-content:center; margin-bottom:10px; }
+#wheel{ border-radius:50%; cursor:crosshair; box-shadow:0 4px 18px rgba(0,0,0,0.5); }
+#lightness-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+#lightness-row span{ font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.15em; color:var(--dim); white-space:nowrap; }
+#lightness-slider{ flex:1; accent-color:var(--gold); }
+#lightness-val{ font-family:'Cinzel',serif; font-size:15px; color:var(--gold); min-width:32px; text-align:right; }
+
+#rgb-inputs{ display:flex; gap:6px; margin-bottom:10px; }
+#rgb-inputs label{ flex:1; display:flex; flex-direction:column; gap:3px; font-family:'Cinzel',serif; font-size:12px; letter-spacing:0.12em; color:var(--dim); }
+#rgb-inputs input{
+  background:#0d0a1e; border:1px solid var(--border); color:var(--text); font-family:'EB Garamond',serif;
+  font-size:18px; padding:4px 5px; border-radius:3px; width:100%;
+}
+#rgb-inputs input:focus{ outline:none; border-color:var(--gold); }
+
+#hex-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+#hex-row label{ font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.15em; color:var(--dim); }
+#in-hex{
+  flex:1; background:#0d0a1e; border:1px solid var(--border); color:var(--text); font-family:'EB Garamond',serif;
+  font-size:20px; padding:5px 8px; border-radius:3px; letter-spacing:0.05em;
+}
+#in-hex:focus{ outline:none; border-color:var(--gold); }
+
+.lab-btn{
+  font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.15em; font-weight:600;
+  background:transparent; border:1px solid rgba(201,169,110,0.22); color:var(--gold);
+  padding:7px 14px; cursor:pointer; border-radius:2px; transition:all 0.2s; width:100%;
+}
+.lab-btn:hover{ background:rgba(201,169,110,0.08); }
+
+/* ── DATA PANEL ── */
+.data-row{ display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px solid rgba(201,169,110,0.06); gap:10px; }
+.data-key{ font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.1em; color:var(--dim); flex-shrink:0; }
+.data-val{ font-family:'EB Garamond',serif; font-size:20px; color:var(--gold); text-align:right; letter-spacing:0.02em; }
+#d-swatch{ height:38px; border-radius:5px; margin-top:12px; box-shadow:0 3px 14px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); }
+
+/* ── WORKSPACE BAR ── */
+#workspace-bar{
+  display:flex; align-items:center; gap:14px; padding:12px 20px; margin:6px 0;
+  border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  background:rgba(8,6,16,0.6);
+}
+#workspace-bar .wb-label{ font-family:'Cinzel',serif; font-size:15px; letter-spacing:0.25em; color:var(--dim); }
+#add-graph-wrap{ position:relative; }
+#add-graph-btn{
+  font-family:'Cinzel',serif; font-size:15px; letter-spacing:0.15em; font-weight:600;
+  background:rgba(201,169,110,0.08); border:1px solid rgba(201,169,110,0.4); color:var(--gold);
+  padding:7px 16px; cursor:pointer; border-radius:2px; transition:all 0.2s;
+}
+#add-graph-btn:hover{ background:rgba(201,169,110,0.16); }
+#add-graph-menu{
+  display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:330px;
+  background:linear-gradient(150deg,#130f22,#09071a); border:1px solid rgba(201,169,110,0.3);
+  border-radius:6px; box-shadow:0 16px 48px rgba(0,0,0,0.9); padding:6px;
+}
+#add-graph-menu.show{ display:block; }
+.menu-item{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:4px; cursor:pointer; transition:background 0.15s;
+}
+.menu-item:hover{ background:rgba(201,169,110,0.1); }
+.menu-item-label{ font-family:'Cinzel',serif; font-size:15px; letter-spacing:0.08em; color:var(--gold); }
+.menu-item-desc{ font-size:15px; color:var(--dim); font-style:italic; margin-top:1px; }
+.menu-tag{
+  font-family:'Cinzel',serif; font-size:10px; letter-spacing:0.1em; padding:2px 6px; border-radius:8px;
+  flex-shrink:0; text-transform:uppercase;
+}
+.menu-tag.ready{ background:rgba(120,210,140,0.15); color:rgba(140,230,160,0.9); border:1px solid rgba(120,210,140,0.35); }
+.menu-tag.phase{ background:rgba(201,169,110,0.1); color:var(--dim); border:1px solid rgba(201,169,110,0.2); }
+
+#tarot-layer-btn{
+  margin-left:auto; font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.14em;
+  background:transparent; border:1px solid rgba(201,169,110,0.12); color:rgba(201,169,110,0.35);
+  padding:6px 12px; border-radius:2px; cursor:not-allowed;
+}
+
+/* ── GRAPH WORKSPACE ── */
+#graph-workspace{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:16px;
+  padding:18px;
+}
+#ws-empty{
+  grid-column:1/-1; text-align:center; padding:50px 20px; color:var(--dim);
+  font-style:italic; font-size:20px; letter-spacing:0.03em;
+}
+.graph-panel{ background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+.graph-panel-header{
+  display:flex; justify-content:space-between; align-items:center; padding:9px 12px;
+  border-bottom:1px solid var(--border); background:rgba(201,169,110,0.03);
+}
+.gp-title{ font-family:'Cinzel',serif; font-size:15px; letter-spacing:0.14em; color:var(--gold); }
+.gp-tag{ font-size:12px; letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-left:6px; }
+.gp-actions{ display:flex; gap:5px; }
+.gp-btn{
+  font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.05em;
+  background:rgba(0,0,0,0.4); border:1px solid var(--border); color:var(--dim);
+  padding:4px 8px; cursor:pointer; border-radius:2px; transition:all 0.15s;
+}
+.gp-btn:hover{ border-color:var(--gold); color:var(--gold); }
+.gp-btn.active{ background:rgba(201,169,110,0.18); border-color:var(--gold); color:var(--gold); }
+.gp-view-controls{ display:flex; gap:6px; margin-bottom:10px; }
+.gp-view-controls .gp-btn{ flex:1; text-align:center; padding:6px 8px; }
+.graph-panel-body{ padding:12px; }
+.graph-panel-body canvas{ width:100%; display:block; border-radius:4px; cursor:grab; background:#06040e; }
+.gp-readout{ margin-top:8px; font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.08em; color:var(--dim); text-align:center; }
+.placeholder-body{ min-height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
+.placeholder-tag{
+  font-family:'Cinzel',serif; font-size:12px; letter-spacing:0.2em; color:rgba(201,169,110,0.5);
+  border:1px solid rgba(201,169,110,0.25); padding:3px 10px; border-radius:10px; margin-bottom:12px;
+}
+.placeholder-body p{ font-size:20px; color:var(--dim); line-height:1.6; font-style:italic; max-width:280px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>TRICKNOLOGIC · COLOR LAB</h1>
+  <p>the foundation beneath the cards</p>
+</div>
+
+<div id="lab-body">
+  <div id="left-col">
+    <div id="picker-panel" class="panel-card">
+      <div class="panel-card-title">Universal Color Picker</div>
+      <div id="wheel-wrap"><canvas id="wheel" width="190" height="190"></canvas></div>
+      <div id="lightness-row">
+        <span>LIGHTNESS</span>
+        <input type="range" id="lightness-slider" min="0" max="100" value="50"/>
+        <span id="lightness-val">50%</span>
+      </div>
+      <div id="rgb-inputs">
+        <label>R<input type="number" id="in-r" min="0" max="255"/></label>
+        <label>G<input type="number" id="in-g" min="0" max="255"/></label>
+        <label>B<input type="number" id="in-b" min="0" max="255"/></label>
+      </div>
+      <div id="hex-row">
+        <label>HEX</label>
+        <input type="text" id="in-hex" maxlength="7"/>
+      </div>
+      <button class="lab-btn" id="random-color-btn">✦ Random Color</button>
+    </div>
+
+    <div id="data-panel" class="panel-card">
+      <div class="panel-card-title">Universal Color Object</div>
+      <div class="data-row"><span class="data-key">HEX</span><span class="data-val" id="d-hex">—</span></div>
+      <div class="data-row"><span class="data-key">RGB (0–255)</span><span class="data-val" id="d-rgb255">—</span></div>
+      <div class="data-row"><span class="data-key">RGB (%)</span><span class="data-val" id="d-rgbpct">—</span></div>
+      <div class="data-row"><span class="data-key">CMYK (%)</span><span class="data-val" id="d-cmyk">—</span></div>
+      <div class="data-row"><span class="data-key">HSL (H° S% L%)</span><span class="data-val" id="d-hsl">—</span></div>
+      <div class="data-row"><span class="data-key">HSV (H° S% V%)</span><span class="data-val" id="d-hsv">—</span></div>
+      <div class="data-row"><span class="data-key">Hue Angle</span><span class="data-val" id="d-hue">—</span></div>
+      <div class="data-row"><span class="data-key">Saturation</span><span class="data-val" id="d-sat">—</span></div>
+      <div class="data-row"><span class="data-key">Lightness</span><span class="data-val" id="d-light">—</span></div>
+      <div class="data-row"><span class="data-key">Brightness (V)</span><span class="data-val" id="d-bright">—</span></div>
+      <div id="d-swatch"></div>
+    </div>
+  </div>
+
+  <div id="splitter" title="Drag to resize">
+    <div class="splitter-line"></div>
+    <div class="splitter-handle">⋮</div>
+  </div>
+
+  <div id="right-col">
+    <div id="workspace-bar">
+      <span class="wb-label">GRAPH WORKSPACE</span>
+      <div id="add-graph-wrap">
+        <button id="add-graph-btn">+ Add Graph</button>
+        <div id="add-graph-menu">
+          <div class="menu-item" data-type="cube">
+            <div><div class="menu-item-label">RGB Cube</div><div class="menu-item-desc">Additive light — X=Red, Y=Green, Z=Blue</div></div>
+            <span class="menu-tag ready">ready</span>
+          </div>
+          <div class="menu-item" data-type="hsl">
+            <div><div class="menu-item-label">HSL/HSV Bicone</div><div class="menu-item-desc">Perceptual color — hue angle, saturation radius, lightness height</div></div>
+            <span class="menu-tag ready">ready</span>
+          </div>
+          <div class="menu-item" data-type="cmy">
+            <div><div class="menu-item-label">RGB/CMY Star + K</div><div class="menu-item-desc">Additive vs. subtractive basis star, K as pull toward neutral</div></div>
+            <span class="menu-tag phase">phase 2</span>
+          </div>
+          <div class="menu-item" data-type="mobius">
+            <div><div class="menu-item-label">Möbius Color Map</div><div class="menu-item-desc">A Three.js surface exploring the additive/subtractive transform</div></div>
+            <span class="menu-tag phase">phase 3</span>
+          </div>
+        </div>
+      </div>
+      <button id="tarot-layer-btn" disabled title="Coming in a future phase — cards as optional data points, sourced from Supabase">🂠 Tarot Layer — coming soon</button>
+    </div>
+
+    <div id="graph-workspace"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// COLOR MATH — pure functions, no state
+// ════════════════════════════════════════════════════════
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+
+function toCMYK(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255,k=1-Math.max(rr,gg,bb);
+  if(k>=1) return {c:0,m:0,y:0,k:1};
+  return {c:(1-rr-k)/(1-k), m:(1-gg-k)/(1-k), y:(1-bb-k)/(1-k), k};
+}
+function cmykToRgb(c,m,y,k){
+  return {
+    r:Math.round(255*(1-c)*(1-k)),
+    g:Math.round(255*(1-m)*(1-k)),
+    b:Math.round(255*(1-y)*(1-k))
+  };
+}
+function rgbToHue(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255;
+  const mx=Math.max(rr,gg,bb),mn=Math.min(rr,gg,bb),d=mx-mn;
+  if(d===0) return -1;
+  let h;
+  if(mx===rr) h=((gg-bb)/d+6)%6;
+  else if(mx===gg) h=(bb-rr)/d+2;
+  else h=(rr-gg)/d+4;
+  return h*60;
+}
+function rgbToHSLSaturation(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255;
+  const mx=Math.max(rr,gg,bb),mn=Math.min(rr,gg,bb);
+  if(mx===mn) return 0;
+  const l=(mx+mn)/2,d=mx-mn;
+  return l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+}
+function rgbLightness(r,g,b){
+  const mx=Math.max(r,g,b)/255,mn=Math.min(r,g,b)/255;
+  return (mx+mn)/2;
+}
+function rgbToHSVSaturation(r,g,b){
+  const mx=Math.max(r,g,b)/255,mn=Math.min(r,g,b)/255;
+  return mx===0 ? 0 : (mx-mn)/mx;
+}
+function rgbValue(r,g,b){ return Math.max(r,g,b)/255; }
+
+function hslToRgb(h,s,l){
+  h=((h%360)+360)%360;
+  const c=(1-Math.abs(2*l-1))*s;
+  const x=c*(1-Math.abs((h/60)%2-1));
+  const m=l-c/2;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;b=0;}
+  else if(h<120){r=x;g=c;b=0;}
+  else if(h<180){r=0;g=c;b=x;}
+  else if(h<240){r=0;g=x;b=c;}
+  else if(h<300){r=x;g=0;b=c;}
+  else {r=c;g=0;b=x;}
+  return {r:Math.round((r+m)*255), g:Math.round((g+m)*255), b:Math.round((b+m)*255)};
+}
+function hexToRgb(hex){
+  const m=hex.replace('#','');
+  return {r:parseInt(m.substr(0,2),16), g:parseInt(m.substr(2,2),16), b:parseInt(m.substr(4,2),16)};
+}
+function rgbToHex(r,g,b){
+  return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
+}
+
+// Derives the full "Universal Color Object" from a single r,g,b point.
+// Every graph and every readout in the app reads from this — one point,
+// many coordinate languages.
+function deriveColorData(r,g,b){
+  const cmyk=toCMYK(r,g,b);
+  const hueRaw=rgbToHue(r,g,b);
+  return {
+    r,g,b, hex:rgbToHex(r,g,b), cmyk,
+    hue: hueRaw<0 ? 0 : hueRaw,
+    hslS: rgbToHSLSaturation(r,g,b),
+    light: rgbLightness(r,g,b),
+    hsvS: rgbToHSVSaturation(r,g,b),
+    val: rgbValue(r,g,b)
+  };
+}
+
+// ════════════════════════════════════════════════════════
+// STATE — the one universal color point
+// ════════════════════════════════════════════════════════
+let currentColor={r:184,g:138,b:92}; // warm amber — the deck's own centroid
+
+function setColor(r,g,b,source){
+  currentColor={r:clamp(Math.round(r),0,255), g:clamp(Math.round(g),0,255), b:clamp(Math.round(b),0,255)};
+  refreshPickerUI(source);
+  renderColorData();
+  renderAllPanels();
+}
+
+// ════════════════════════════════════════════════════════
+// COLOR WHEEL — hue(angle) × saturation(radius) at fixed L=0.5,
+// lightness handled by a separate slider (classic HSB-wheel pattern)
+// ════════════════════════════════════════════════════════
+let wheelBg=null;
+function buildWheelBitmap(size){
+  const off=document.createElement('canvas'); off.width=size; off.height=size;
+  const octx=off.getContext('2d');
+  const img=octx.createImageData(size,size);
+  const data=img.data;
+  const cx=size/2, cy=size/2, maxR=size/2-2;
+  for(let py=0;py<size;py++){
+    for(let px=0;px<size;px++){
+      const dx=px-cx, dy=py-cy, rr=Math.hypot(dx,dy);
+      const idx=(py*size+px)*4;
+      if(rr>maxR+1){ data[idx+3]=0; continue; }
+      const angle=Math.atan2(dy,dx);
+      const hue=((angle*180/Math.PI)+360)%360;
+      const sat=Math.min(1,rr/maxR);
+      const col=hslToRgb(hue,sat,0.5);
+      data[idx]=col.r; data[idx+1]=col.g; data[idx+2]=col.b;
+      data[idx+3]=rr>maxR-1 ? Math.round(255*(maxR-rr+1)/2) : 255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  return off;
+}
+function drawWheel(){
+  const canvas=document.getElementById('wheel');
+  const ctx=canvas.getContext('2d');
+  const size=canvas.width;
+  if(!wheelBg) wheelBg=buildWheelBitmap(size);
+  ctx.clearRect(0,0,size,size);
+  ctx.drawImage(wheelBg,0,0);
+  const d=deriveColorData(currentColor.r,currentColor.g,currentColor.b);
+  const cx=size/2, cy=size/2, maxR=size/2-2;
+  const angle=d.hue*Math.PI/180;
+  const rad=d.hslS*maxR;
+  const mx=cx+Math.cos(angle)*rad, my=cy+Math.sin(angle)*rad;
+  const lum=(currentColor.r*299+currentColor.g*587+currentColor.b*114)/1000;
+  ctx.beginPath(); ctx.arc(mx,my,6,0,Math.PI*2);
+  ctx.strokeStyle=lum>140 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)';
+  ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(mx,my,1.5,0,Math.PI*2);
+  ctx.fillStyle=ctx.strokeStyle; ctx.fill();
+}
+let wheelDragging=false;
+function wheelPick(clientX,clientY){
+  const canvas=document.getElementById('wheel');
+  const rect=canvas.getBoundingClientRect();
+  const size=canvas.width;
+  const scaleX=size/rect.width, scaleY=size/rect.height;
+  const px=(clientX-rect.left)*scaleX, py=(clientY-rect.top)*scaleY;
+  const cx=size/2, cy=size/2, maxR=size/2-2;
+  const dx=px-cx, dy=py-cy;
+  let rr=Math.hypot(dx,dy); if(rr>maxR) rr=maxR;
+  const angle=Math.atan2(dy,dx);
+  const hue=((angle*180/Math.PI)+360)%360;
+  const sat=rr/maxR;
+  const l=rgbLightness(currentColor.r,currentColor.g,currentColor.b);
+  const rgb=hslToRgb(hue,sat,l);
+  setColor(rgb.r,rgb.g,rgb.b,'wheel');
+}
+document.getElementById('wheel').addEventListener('mousedown',e=>{ wheelDragging=true; wheelPick(e.clientX,e.clientY); });
+document.addEventListener('mousemove',e=>{ if(wheelDragging) wheelPick(e.clientX,e.clientY); });
+document.addEventListener('mouseup',()=>{ wheelDragging=false; });
+document.getElementById('wheel').addEventListener('touchstart',e=>{ e.preventDefault(); wheelDragging=true; const t=e.touches[0]; wheelPick(t.clientX,t.clientY); },{passive:false});
+document.addEventListener('touchmove',e=>{ if(!wheelDragging) return; const t=e.touches[0]; wheelPick(t.clientX,t.clientY); },{passive:false});
+document.addEventListener('touchend',()=>{ wheelDragging=false; });
+
+document.getElementById('lightness-slider').addEventListener('input',e=>{
+  const l=parseInt(e.target.value)/100;
+  const hueRaw=rgbToHue(currentColor.r,currentColor.g,currentColor.b);
+  const hh=hueRaw<0?0:hueRaw;
+  const s=rgbToHSLSaturation(currentColor.r,currentColor.g,currentColor.b);
+  const rgb=hslToRgb(hh,s,l);
+  setColor(rgb.r,rgb.g,rgb.b,'lightness');
+});
+
+['r','g','b'].forEach(ch=>{
+  document.getElementById('in-'+ch).addEventListener('input',()=>{
+    const r=parseInt(document.getElementById('in-r').value)||0;
+    const g=parseInt(document.getElementById('in-g').value)||0;
+    const b=parseInt(document.getElementById('in-b').value)||0;
+    setColor(r,g,b,'rgbinput');
+  });
+});
+
+document.getElementById('in-hex').addEventListener('change',e=>{
+  let v=e.target.value.trim();
+  if(v && !v.startsWith('#')) v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){
+    const rgb=hexToRgb(v);
+    setColor(rgb.r,rgb.g,rgb.b,'hex');
+  }
+});
+
+document.getElementById('random-color-btn').addEventListener('click',()=>{
+  setColor(Math.random()*255, Math.random()*255, Math.random()*255, 'random');
+});
+
+function refreshPickerUI(source){
+  drawWheel();
+  const d=deriveColorData(currentColor.r,currentColor.g,currentColor.b);
+  if(source!=='lightness'){
+    document.getElementById('lightness-slider').value=Math.round(d.light*100);
+  }
+  document.getElementById('lightness-val').textContent=Math.round(d.light*100)+'%';
+  if(source!=='rgbinput'){
+    document.getElementById('in-r').value=currentColor.r;
+    document.getElementById('in-g').value=currentColor.g;
+    document.getElementById('in-b').value=currentColor.b;
+  }
+  if(document.activeElement.id!=='in-hex'){
+    document.getElementById('in-hex').value=d.hex;
+  }
+}
+
+function renderColorData(){
+  const d=deriveColorData(currentColor.r,currentColor.g,currentColor.b);
+  document.getElementById('d-hex').textContent=d.hex;
+  document.getElementById('d-rgb255').textContent=`${d.r}, ${d.g}, ${d.b}`;
+  document.getElementById('d-rgbpct').textContent=`${(d.r/255*100).toFixed(0)}% · ${(d.g/255*100).toFixed(0)}% · ${(d.b/255*100).toFixed(0)}%`;
+  document.getElementById('d-cmyk').textContent=`${(d.cmyk.c*100).toFixed(0)}% · ${(d.cmyk.m*100).toFixed(0)}% · ${(d.cmyk.y*100).toFixed(0)}% · ${(d.cmyk.k*100).toFixed(0)}%`;
+  document.getElementById('d-hsl').textContent=`${d.hue.toFixed(0)}° · ${(d.hslS*100).toFixed(0)}% · ${(d.light*100).toFixed(0)}%`;
+  document.getElementById('d-hsv').textContent=`${d.hue.toFixed(0)}° · ${(d.hsvS*100).toFixed(0)}% · ${(d.val*100).toFixed(0)}%`;
+  document.getElementById('d-hue').textContent=`${d.hue.toFixed(1)}°`;
+  document.getElementById('d-sat').textContent=`${(d.hslS*100).toFixed(0)}% (HSL) · ${(d.hsvS*100).toFixed(0)}% (HSV)`;
+  document.getElementById('d-light').textContent=`${(d.light*100).toFixed(0)}%`;
+  document.getElementById('d-bright').textContent=`${(d.val*100).toFixed(0)}%`;
+  document.getElementById('d-swatch').style.background=`rgb(${d.r},${d.g},${d.b})`;
+}
+
+// ════════════════════════════════════════════════════════
+// SHARED 3D PROJECTION — same math used across every 3D graph type
+// ════════════════════════════════════════════════════════
+function project3D(x,y,z,rotX,rotY,W,H){
+  const cy2=Math.cos(rotY), sy=Math.sin(rotY);
+  const x1=x*cy2-z*sy, z1=x*sy+z*cy2;
+  const cx2=Math.cos(rotX), sx=Math.sin(rotX);
+  const y2=y*cx2-z1*sx, z2=y*sx+z1*cx2;
+  const fov=200;
+  const d=fov/(fov*0.01+z2+300);
+  return {sx:W/2+x1*d, sy:H/2+y2*d, z:z2};
+}
+
+// Edge-colored cuboid: the house style established in the Two-Card Relationship
+// lab. Each of the 12 edges gets a flat symbolic color rather than a true
+// blended gradient — 3 edges pure along each axis, the vertical drop into the
+// far corner in full true color, the other two touching it in their two-channel
+// blend. anchor→far works for any axis pairing (additive OR subtractive).
+function drawEdgeColoredCuboid(ctx,s,anchor,far,alpha,labelText){
+  const A=anchor, F=far;
+  const pts=[
+    s(A.r,A.g,A.b), s(F.r,A.g,A.b), s(F.r,F.g,A.b), s(A.r,F.g,A.b),
+    s(A.r,A.g,F.b), s(F.r,A.g,F.b), s(F.r,F.g,F.b), s(A.r,F.g,F.b)
+  ];
+  const faces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[0,3,7,4]];
+  faces.forEach(f=>{
+    ctx.beginPath(); ctx.moveTo(pts[f[0]].sx,pts[f[0]].sy);
+    f.forEach(i=>ctx.lineTo(pts[i].sx,pts[i].sy)); ctx.closePath();
+    ctx.fillStyle=`rgba(${F.r|0},${F.g|0},${F.b|0},${alpha*0.06})`;
+    ctx.fill();
+  });
+  const rgba=(r,g,b,a)=>`rgba(${r|0},${g|0},${b|0},${a})`;
+  const colR=rgba(F.r,A.g,A.b,alpha*0.9);
+  const colG=rgba(A.r,F.g,A.b,alpha*0.9);
+  const colB=rgba(A.r,A.g,F.b,alpha*0.9);
+  const colFull=rgba(F.r,F.g,F.b,alpha);
+  const colGB=rgba(A.r,F.g,F.b,alpha*0.9);
+  const colRG=rgba(F.r,F.g,A.b,alpha*0.9);
+  const edgeDefs=[
+    [0,1,colR],[2,3,colR],[4,5,colR],
+    [1,2,colG],[3,0,colG],[7,4,colG],
+    [0,4,colB],[1,5,colB],[3,7,colB],
+    [5,6,colFull],
+    [6,7,colGB],
+    [2,6,colRG],
+  ];
+  edgeDefs.forEach(([ea,eb,col])=>{
+    ctx.beginPath(); ctx.moveTo(pts[ea].sx,pts[ea].sy); ctx.lineTo(pts[eb].sx,pts[eb].sy);
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+  });
+  const dot=pts[6];
+  const gr=ctx.createRadialGradient(dot.sx,dot.sy,0,dot.sx,dot.sy,15);
+  gr.addColorStop(0,rgba(F.r,F.g,F.b,alpha*0.45)); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,15,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,5,0,Math.PI*2); ctx.fillStyle=`rgb(${F.r|0},${F.g|0},${F.b|0})`; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,7.5,0,Math.PI*2); ctx.strokeStyle='rgba(201,169,110,0.75)'; ctx.lineWidth=1.2; ctx.stroke();
+  if(labelText){
+    ctx.font='bold 12px Cinzel,serif';
+    ctx.fillStyle=rgba(Math.min(F.r+90,255),Math.min(F.g+90,255),Math.min(F.b+90,255),0.9);
+    ctx.textAlign='center'; ctx.fillText(labelText,dot.sx,dot.sy+16);
+  }
+  return dot;
+}
+
+// ════════════════════════════════════════════════════════
+// GRAPH TYPE REGISTRY
+// ════════════════════════════════════════════════════════
+const GRAPH_TYPES={
+  cube:{label:'RGB Cube', tag:'ready', desc:'Additive light space — X=Red, Y=Green, Z=Blue.'},
+  hsl:{label:'HSL/HSV Bicone', tag:'ready', desc:'Perceptual color — hue angle, saturation radius, lightness height.'},
+  cmy:{label:'RGB/CMY Star + K', tag:'phase 2', desc:'The additive/subtractive basis star, with K as movement toward neutral rather than a fourth axis. We already built this logic once, in the Two-Card Relationship lab — porting it here is next.'},
+  mobius:{label:'Möbius Color Map', tag:'phase 3', desc:'A real Three.js surface, orbit-controllable, exploring the transformation between additive and subtractive color as a single continuous strip.'}
+};
+
+// ════════════════════════════════════════════════════════
+// WORKSPACE STATE
+// ════════════════════════════════════════════════════════
+let panels=[];
+let panelIdCounter=0;
+
+function addPanel(type){
+  const id='panel'+(++panelIdCounter);
+  panels.push({id,type,visible:true,locked:false,rotX:0.5,rotY:0.7});
+  renderWorkspace();
+}
+function removePanel(id){
+  panels=panels.filter(p=>p.id!==id);
+  renderWorkspace();
+}
+function toggleVisible(id){
+  const p=panels.find(p=>p.id===id);
+  if(p) p.visible=!p.visible;
+  renderWorkspace();
+}
+function renderAllPanels(){
+  panels.forEach(p=>{ if(p.redraw) p.redraw(); });
+}
+
+function renderWorkspace(){
+  const ws=document.getElementById('graph-workspace');
+  ws.innerHTML='';
+  if(panels.length===0){
+    ws.innerHTML='<div id="ws-empty">Click + Add Graph to begin exploring this color.</div>';
+    return;
+  }
+  panels.forEach(p=>{
+    const info=GRAPH_TYPES[p.type];
+    const el=document.createElement('div');
+    el.className='graph-panel';
+    el.innerHTML=`
+      <div class="graph-panel-header">
+        <span class="gp-title">${info.label}${info.tag!=='ready'?`<span class="gp-tag">${info.tag}</span>`:''}</span>
+        <span class="gp-actions">
+          <button class="gp-btn eye-btn" data-id="${p.id}">${p.visible?'👁 Hide':'👁 Show'}</button>
+          <button class="gp-btn close-btn" data-id="${p.id}">✕</button>
+        </span>
+      </div>
+      <div class="graph-panel-body" style="${p.visible?'':'display:none'}"></div>
+    `;
+    ws.appendChild(el);
+    const body=el.querySelector('.graph-panel-body');
+    if(p.type==='cube') buildCubePanelBody(body,p);
+    else if(p.type==='hsl') buildHSLPanelBody(body,p);
+    else buildPlaceholderBody(body,info);
+  });
+  ws.querySelectorAll('.eye-btn').forEach(b=>b.addEventListener('click',()=>toggleVisible(b.dataset.id)));
+  ws.querySelectorAll('.close-btn').forEach(b=>b.addEventListener('click',()=>removePanel(b.dataset.id)));
+}
+
+function buildPlaceholderBody(container,info){
+  container.innerHTML=`<div class="placeholder-body">
+    <div class="placeholder-tag">${info.tag.toUpperCase()}</div>
+    <p>${info.desc}</p>
+  </div>`;
+}
+
+// Standard isometric camera angles for this rotation scheme (rotate Y, then X):
+// 45° around the vertical axis, then tilt down by arctan(1/√2) ≈ 35.264° —
+// the angle pair that gives all three axes equal foreshortening.
+const ISO_ROT_Y = Math.PI/4;
+const ISO_ROT_X = Math.atan(1/Math.sqrt(2));
+
+// ════════════════════════════════════════════════════════
+// DRAGGABLE COLOR POINTS
+// A graph shows a color as a point projected from 3D (or N-parameter) space
+// onto a 2D screen. To let the person drag that point directly, we need the
+// inverse: given a desired 2D screen movement, what's the smallest movement
+// in the underlying parameters that would produce it? At any camera angle,
+// each parameter has its own "sensitivity" on screen — this computes that
+// sensitivity (a Jacobian, via finite differences) and solves for the
+// minimal-norm parameter change using its pseudo-inverse. This is honest
+// math, not a heuristic: it's the same trick used to drag joints in inverse
+// kinematics, applied here to color space instead of a skeleton.
+function dragParamsByScreenDelta(params, projectFn, dxScreen, dyScreen, eps){
+  const s0=projectFn(params);
+  const cols=params.map((p,i)=>{
+    const pert=params.slice(); pert[i]+=eps[i];
+    const sp=projectFn(pert);
+    return [(sp.sx-s0.sx)/eps[i], (sp.sy-s0.sy)/eps[i]];
+  });
+  let a=0,b=0,d=0;
+  cols.forEach(([jx,jy])=>{ a+=jx*jx; b+=jx*jy; d+=jy*jy; });
+  const det=a*d-b*b;
+  if(Math.abs(det)<1e-9) return params.slice();
+  const inv00=d/det, inv01=-b/det, inv11=a/det;
+  const t0=inv00*dxScreen+inv01*dyScreen;
+  const t1=inv01*dxScreen+inv11*dyScreen;
+  return params.map((p,i)=>p+cols[i][0]*t0+cols[i][1]*t1);
+}
+
+// Combined wiring: drag the background to rotate the view (unless locked),
+// or grab the color point itself (always draggable, even while view-locked)
+// to move it — which recomputes the universal color live.
+function wireDragWithPoint(canvas,panel,cfg){
+  let mode=null; // null | 'view' | 'point'
+  let lx=0,ly=0;
+  // The canvas draws using its internal bitmap grid (canvas.width/height),
+  // but CSS stretches it to fill the panel — which can be a very different
+  // size. Mouse/touch coordinates arrive in the *displayed* pixel space, so
+  // they must be rescaled into the *bitmap* space before comparing against
+  // anything the draw functions computed (like the dot's position).
+  function toBitmapSpace(px,py){
+    const scaleX=canvas.width/canvas.clientWidth;
+    const scaleY=canvas.height/canvas.clientHeight;
+    return {x:px*scaleX, y:py*scaleY};
+  }
+  function updateCursor(){
+    if(mode==='point'||mode==='view'){ canvas.style.cursor='grabbing'; return; }
+    canvas.style.cursor=panel.locked?'not-allowed':'grab';
+  }
+  function begin(rawX,rawY){
+    const {x:offsetX,y:offsetY}=toBitmapSpace(rawX,rawY);
+    const dot=cfg.projectFn(cfg.getParams());
+    const dx=offsetX-dot.sx, dy=offsetY-dot.sy;
+    if(dx*dx+dy*dy<=cfg.hitRadius*cfg.hitRadius) mode='point';
+    else if(!panel.locked) mode='view';
+    else mode=null;
+    lx=offsetX; ly=offsetY;
+    updateCursor();
+  }
+  function move(rawX,rawY){
+    const {x:offsetX,y:offsetY}=toBitmapSpace(rawX,rawY);
+    if(mode==='point'){
+      const newParams=dragParamsByScreenDelta(cfg.getParams(), cfg.projectFn, offsetX-lx, offsetY-ly, cfg.eps);
+      cfg.applyParams(newParams);
+    } else if(mode==='view'){
+      panel.rotY+=(offsetX-lx)*0.01; panel.rotX+=(offsetY-ly)*0.01;
+      cfg.onRedraw();
+    }
+    lx=offsetX; ly=offsetY;
+  }
+  function end(){ mode=null; updateCursor(); }
+
+  canvas.addEventListener('mousedown',e=>begin(e.offsetX,e.offsetY));
+  window.addEventListener('mouseup',end);
+  canvas.addEventListener('mousemove',e=>{
+    if(mode){ move(e.offsetX,e.offsetY); return; }
+    // Not currently dragging — just give honest hover feedback: the dot is
+    // always grabbable, even while the view is locked; empty space isn't.
+    const {x,y}=toBitmapSpace(e.offsetX,e.offsetY);
+    const dot=cfg.projectFn(cfg.getParams());
+    const dx=x-dot.sx, dy=y-dot.sy;
+    const overDot=dx*dx+dy*dy<=cfg.hitRadius*cfg.hitRadius;
+    canvas.style.cursor = overDot ? 'grab' : (panel.locked?'not-allowed':'grab');
+  });
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    begin(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  },{passive:false});
+  canvas.addEventListener('touchend',end);
+  canvas.addEventListener('touchmove',e=>{
+    if(!mode) return; e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    move(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  },{passive:false});
+  updateCursor();
+}
+
+function wireDrag(canvas,panel,onDrag){
+  let dragging=false,lx=0,ly=0;
+  canvas.style.cursor=panel.locked?'not-allowed':'grab';
+  canvas.addEventListener('mousedown',e=>{
+    if(panel.locked) return;
+    dragging=true; lx=e.offsetX; ly=e.offsetY; canvas.style.cursor='grabbing';
+  });
+  window.addEventListener('mouseup',()=>{ dragging=false; if(document.body.contains(canvas)) canvas.style.cursor=panel.locked?'not-allowed':'grab'; });
+  canvas.addEventListener('mousemove',e=>{
+    if(!dragging||panel.locked) return;
+    panel.rotY+=(e.offsetX-lx)*0.01; panel.rotX+=(e.offsetY-ly)*0.01;
+    lx=e.offsetX; ly=e.offsetY;
+    onDrag();
+  });
+  canvas.addEventListener('touchstart',e=>{
+    if(panel.locked) return;
+    e.preventDefault(); dragging=true; const r=canvas.getBoundingClientRect(); lx=e.touches[0].clientX-r.left; ly=e.touches[0].clientY-r.top;
+  },{passive:false});
+  canvas.addEventListener('touchend',()=>{ dragging=false; });
+  canvas.addEventListener('touchmove',e=>{
+    if(!dragging||panel.locked) return; e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    const ox=e.touches[0].clientX-r.left, oy=e.touches[0].clientY-r.top;
+    panel.rotY+=(ox-lx)*0.01; panel.rotX+=(oy-ly)*0.01;
+    lx=ox; ly=oy;
+    onDrag();
+  },{passive:false});
+}
+
+// Shared control row — Lock View + Isometric — attached to every 3D graph
+// panel, present and future, so new graph types get this for free.
+function buildViewControls(container,panel,onChange){
+  const slot=container.querySelector('.gp-view-controls-slot');
+  const row=document.createElement('div');
+  row.className='gp-view-controls';
+  row.innerHTML=`
+    <button class="gp-btn view-lock-btn">${panel.locked?'🔒 Locked':'🔓 Lock View'}</button>
+    <button class="gp-btn view-iso-btn">⬡ Isometric</button>
+  `;
+  (slot||container).appendChild(row);
+  const lockBtn=row.querySelector('.view-lock-btn');
+  const isoBtn=row.querySelector('.view-iso-btn');
+  lockBtn.addEventListener('click',()=>{
+    panel.locked=!panel.locked;
+    lockBtn.textContent=panel.locked?'🔒 Locked':'🔓 Lock View';
+    lockBtn.classList.toggle('active',panel.locked);
+    const canvas=document.getElementById(panel.canvasId);
+    if(canvas) canvas.style.cursor=panel.locked?'not-allowed':'grab';
+  });
+  isoBtn.addEventListener('click',()=>{
+    panel.rotY=ISO_ROT_Y; panel.rotX=ISO_ROT_X;
+    onChange();
+  });
+}
+
+// ── GRAPH: RGB CUBE ──
+function cubeProjector(panel,W,H){
+  const SC=Math.min(W,H)*0.32;
+  return (r,g,b)=>project3D((r/255)*SC*2-SC, -(g/255)*SC*2+SC, (b/255)*SC*2-SC, panel.rotX, panel.rotY, W, H);
+}
+
+function buildCubePanelBody(container,panel){
+  panel.canvasId='cv_'+panel.id;
+  panel.readoutId='ro_'+panel.id;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><canvas id="${panel.canvasId}" width="320" height="290"></canvas><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  const canvas=document.getElementById(panel.canvasId);
+  panel.redraw=()=>drawCubePanel(panel);
+  wireDragWithPoint(canvas,panel,{
+    getParams:()=>[currentColor.r,currentColor.g,currentColor.b],
+    applyParams:(p)=>setColor(p[0],p[1],p[2],'drag-point'),
+    projectFn:(p)=>cubeProjector(panel,canvas.width,canvas.height)(p[0],p[1],p[2]),
+    eps:[2,2,2],
+    hitRadius:14,
+    onRedraw:panel.redraw
+  });
+  buildViewControls(container,panel,panel.redraw);
+  panel.redraw();
+}
+function drawCubePanel(panel){
+  const canvas=document.getElementById(panel.canvasId);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#06040e'; ctx.fillRect(0,0,W,H);
+  const s=cubeProjector(panel,W,H);
+
+  const corners=[[0,0,0],[255,0,0],[255,255,0],[0,255,0],[0,0,255],[255,0,255],[255,255,255],[0,255,255]].map(([r,g,b])=>s(r,g,b));
+  const wireEdges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  ctx.strokeStyle='rgba(201,169,110,0.08)'; ctx.lineWidth=0.5;
+  wireEdges.forEach(([ea,eb])=>{
+    ctx.beginPath(); ctx.moveTo(corners[ea].sx,corners[ea].sy); ctx.lineTo(corners[eb].sx,corners[eb].sy); ctx.stroke();
+  });
+
+  const O=s(0,0,0);
+  [[255,0,0,'R','rgba(200,70,60,0.6)'],[0,255,0,'G','rgba(60,180,70,0.6)'],[0,0,255,'B','rgba(60,100,210,0.6)']].forEach(([r,g,b,lbl,col])=>{
+    const p=s(r,g,b);
+    ctx.beginPath(); ctx.moveTo(O.sx,O.sy); ctx.lineTo(p.sx,p.sy);
+    ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([3,5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font='bold 15px Cinzel,serif'; ctx.fillStyle=col.replace('0.6','0.9'); ctx.textAlign='left';
+    ctx.fillText(lbl,p.sx+3,p.sy+3);
+  });
+
+  const {r,g,b}=currentColor;
+  drawEdgeColoredCuboid(ctx,s,{r:0,g:0,b:0},{r,g,b},1.0,null);
+
+  ctx.beginPath(); ctx.arc(O.sx,O.sy,3,0,Math.PI*2); ctx.fillStyle='rgba(201,169,110,0.45)'; ctx.fill();
+  ctx.font='bold 12px EB Garamond,serif'; ctx.fillStyle='rgba(120,100,60,0.55)'; ctx.textAlign='left';
+  ctx.fillText('0,0,0',O.sx+5,O.sy-4);
+
+  const dist=Math.sqrt(r*r+g*g+b*b);
+  const readout=document.getElementById(panel.readoutId);
+  if(readout) readout.innerHTML=`(${r}, ${g}, ${b}) &nbsp;·&nbsp; distance from origin ${dist.toFixed(1)} / 441.7 &nbsp;·&nbsp; ${((dist/441.7)*16).toFixed(2)}/16 &nbsp;·&nbsp; <em>drag the dot to set the color</em>`;
+}
+
+// ── GRAPH: HSL/HSV BICONE ──
+// Classic double-cone: radius(L) = 1-|2L-1| — zero at pure black/white,
+// maximal at L=0.5, forming the widest ring where hue and saturation
+// read most vividly. Hue sweeps the ring, saturation is radius within it.
+function biconeRadius(l){ return 1-Math.abs(2*l-1); }
+
+function biconeProjector(panel,W,H){
+  const SC=Math.min(W,H)*0.34;
+  return (x,y,z)=>project3D(x*SC,y*SC,z*SC,panel.rotX,panel.rotY,W,H);
+}
+function biconeParamsToXYZ(hue,sat,light){
+  const maxRad=biconeRadius(light);
+  const rad=sat*maxRad;
+  const ang=hue*Math.PI/180;
+  return {x:rad*Math.cos(ang), y:rad*Math.sin(ang), z:2*light-1};
+}
+
+function buildHSLPanelBody(container,panel){
+  panel.canvasId='cv_'+panel.id;
+  panel.readoutId='ro_'+panel.id;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  const canvas=document.getElementById(panel.canvasId);
+  panel.redraw=()=>drawHSLPanel(panel);
+  wireDragWithPoint(canvas,panel,{
+    getParams:()=>{
+      const hueRaw=rgbToHue(currentColor.r,currentColor.g,currentColor.b);
+      return [hueRaw<0?0:hueRaw, rgbToHSLSaturation(currentColor.r,currentColor.g,currentColor.b), rgbLightness(currentColor.r,currentColor.g,currentColor.b)];
+    },
+    applyParams:(p)=>{
+      const hue=((p[0]%360)+360)%360, sat=clamp(p[1],0,1), light=clamp(p[2],0,1);
+      const rgb=hslToRgb(hue,sat,light);
+      setColor(rgb.r,rgb.g,rgb.b,'drag-point');
+    },
+    projectFn:(p)=>{
+      const xyz=biconeParamsToXYZ(p[0],p[1],p[2]);
+      return biconeProjector(panel,canvas.width,canvas.height)(xyz.x,xyz.y,xyz.z);
+    },
+    eps:[3,0.015,0.015],
+    hitRadius:14,
+    onRedraw:panel.redraw
+  });
+  buildViewControls(container,panel,panel.redraw);
+  panel.redraw();
+}
+function drawHSLPanel(panel){
+  const canvas=document.getElementById(panel.canvasId);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#06040e'; ctx.fillRect(0,0,W,H);
+  const s=biconeProjector(panel,W,H);
+
+  const zTop=s(0,0,1), zBot=s(0,0,-1);
+  ctx.beginPath(); ctx.moveTo(zBot.sx,zBot.sy); ctx.lineTo(zTop.sx,zTop.sy);
+  ctx.strokeStyle='rgba(220,220,220,0.35)'; ctx.lineWidth=1; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font='bold 14px Cinzel,serif'; ctx.fillStyle='rgba(220,220,220,0.7)'; ctx.textAlign='center';
+  ctx.fillText('white · L=1',zTop.sx,zTop.sy-10);
+  ctx.fillText('black · L=0',zBot.sx,zBot.sy+16);
+
+  const LEVELS=9, HUE_STEPS=48;
+  for(let li=0; li<=LEVELS; li++){
+    const l=li/LEVELS;
+    const rad=biconeRadius(l);
+    const z=2*l-1;
+    let prevPt=null;
+    for(let hi=0; hi<=HUE_STEPS; hi++){
+      const hue=hi/HUE_STEPS*360;
+      const ang=hue*Math.PI/180;
+      const x=rad*Math.cos(ang), y=rad*Math.sin(ang);
+      const pt=s(x,y,z);
+      const col=hslToRgb(hue,1,l);
+      if(prevPt){
+        ctx.beginPath(); ctx.moveTo(prevPt.sx,prevPt.sy); ctx.lineTo(pt.sx,pt.sy);
+        ctx.strokeStyle=`rgba(${col.r},${col.g},${col.b},0.55)`; ctx.lineWidth=1.1; ctx.stroke();
+      }
+      prevPt=pt;
+    }
+  }
+  for(let hi=0; hi<12; hi++){
+    const ang=hi*30*Math.PI/180;
+    let prevPt=null;
+    for(let li=0; li<=LEVELS; li++){
+      const l=li/LEVELS;
+      const rad=biconeRadius(l);
+      const z=2*l-1;
+      const pt=s(rad*Math.cos(ang), rad*Math.sin(ang), z);
+      if(prevPt){
+        ctx.beginPath(); ctx.moveTo(prevPt.sx,prevPt.sy); ctx.lineTo(pt.sx,pt.sy);
+        ctx.strokeStyle='rgba(201,169,110,0.12)'; ctx.lineWidth=0.6; ctx.stroke();
+      }
+      prevPt=pt;
+    }
+  }
+
+  const {r,g,b}=currentColor;
+  const hueRaw=rgbToHue(r,g,b); const hh=hueRaw<0?0:hueRaw;
+  const sat=rgbToHSLSaturation(r,g,b);
+  const light=rgbLightness(r,g,b);
+  const xyz=biconeParamsToXYZ(hh,sat,light);
+  const dot=s(xyz.x,xyz.y,xyz.z);
+  const axisPt=s(0,0,xyz.z);
+
+  ctx.beginPath(); ctx.moveTo(axisPt.sx,axisPt.sy); ctx.lineTo(dot.sx,dot.sy);
+  ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.setLineDash([2,3]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(zBot.sx,zBot.sy); ctx.lineTo(axisPt.sx,axisPt.sy);
+  ctx.strokeStyle='rgba(220,220,220,0.4)'; ctx.lineWidth=1.4; ctx.stroke();
+
+  const glow=ctx.createRadialGradient(dot.sx,dot.sy,0,dot.sx,dot.sy,16);
+  glow.addColorStop(0,`rgba(${r},${g},${b},0.6)`); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,16,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,5,0,Math.PI*2); ctx.fillStyle=`rgb(${r},${g},${b})`; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,7.5,0,Math.PI*2); ctx.strokeStyle='rgba(201,169,110,0.8)'; ctx.lineWidth=1.2; ctx.stroke();
+
+  const readout=document.getElementById(panel.readoutId);
+  if(readout) readout.innerHTML=`H ${hh.toFixed(0)}° &nbsp;·&nbsp; S ${(sat*100).toFixed(0)}% &nbsp;·&nbsp; L ${(light*100).toFixed(0)}% &nbsp;·&nbsp; <em>drag the dot to set the color</em>`;
+}
+
+// ════════════════════════════════════════════════════════
+// ADD-GRAPH MENU
+// ════════════════════════════════════════════════════════
+document.getElementById('add-graph-btn').addEventListener('click',e=>{
+  e.stopPropagation();
+  document.getElementById('add-graph-menu').classList.toggle('show');
+});
+document.querySelectorAll('.menu-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    addPanel(item.dataset.type);
+    document.getElementById('add-graph-menu').classList.remove('show');
+  });
+});
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('add-graph-menu');
+  if(menu.classList.contains('show') && !menu.contains(e.target) && e.target.id!=='add-graph-btn'){
+    menu.classList.remove('show');
+  }
+});
+
+// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// SPLITTER — drag to resize the left column
+// ════════════════════════════════════════════════════════
+(function(){
+  const splitter=document.getElementById('splitter');
+  const leftCol=document.getElementById('left-col');
+  const labBody=document.getElementById('lab-body');
+  let dragging=false;
+
+  function setWidthFromClientX(clientX){
+    const rect=labBody.getBoundingClientRect();
+    const w=clamp(clientX-rect.left, 260, Math.min(700, rect.width-300));
+    leftCol.style.width=w+'px';
+  }
+  splitter.addEventListener('mousedown',()=>{ dragging=true; splitter.classList.add('dragging'); document.body.style.userSelect='none'; });
+  window.addEventListener('mouseup',()=>{ dragging=false; splitter.classList.remove('dragging'); document.body.style.userSelect=''; });
+  window.addEventListener('mousemove',e=>{ if(dragging) setWidthFromClientX(e.clientX); });
+  splitter.addEventListener('touchstart',()=>{ dragging=true; splitter.classList.add('dragging'); },{passive:true});
+  window.addEventListener('touchend',()=>{ dragging=false; splitter.classList.remove('dragging'); });
+  window.addEventListener('touchmove',e=>{ if(dragging) setWidthFromClientX(e.touches[0].clientX); },{passive:true});
+})();
+
+// INIT
+// ════════════════════════════════════════════════════════
+refreshPickerUI();
+renderColorData();
+renderWorkspace();
+addPanel('cube');
+addPanel('hsl');
+</script>
+</body>
+</html>
