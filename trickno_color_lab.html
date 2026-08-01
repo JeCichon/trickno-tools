@@ -161,7 +161,28 @@ body{
 .gp-view-controls{ display:flex; gap:6px; margin-bottom:10px; }
 .gp-view-controls .gp-btn{ flex:1; text-align:center; padding:6px 8px; }
 .graph-panel-body{ padding:12px; }
+.gp-canvas-wrap{ position:relative; }
 .graph-panel-body canvas{ width:100%; display:block; border-radius:4px; cursor:grab; background:#06040e; }
+
+/* ── VIEW CUBE (Maya-style corner widget) ── */
+.gp-viewcube{
+  position:absolute; top:8px; right:8px; z-index:5;
+  display:grid; grid-template-columns:22px 40px 22px; grid-template-rows:22px 40px 22px;
+  gap:2px;
+}
+.gp-viewcube .vc-up{ grid-column:2; grid-row:1; }
+.gp-viewcube .vc-left{ grid-column:1; grid-row:2; }
+.gp-viewcube .vc-center{ grid-column:2; grid-row:2; }
+.gp-viewcube .vc-right{ grid-column:3; grid-row:2; }
+.gp-viewcube .vc-down{ grid-column:2; grid-row:3; }
+.vc-btn{
+  background:rgba(10,8,20,0.85); border:1px solid rgba(201,169,110,0.35); color:var(--gold);
+  cursor:pointer; border-radius:3px; display:flex; align-items:center; justify-content:center;
+  font-size:11px; padding:0; transition:all 0.15s;
+}
+.vc-btn:hover{ background:rgba(201,169,110,0.18); border-color:var(--gold); }
+.vc-center{ font-family:'Cinzel',serif; }
+.vc-label{ font-size:8px; letter-spacing:0.05em; line-height:1.1; text-align:center; }
 .gp-readout{ margin-top:8px; font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.08em; color:var(--dim); text-align:center; }
 .placeholder-body{ min-height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
 .placeholder-tag{
@@ -236,8 +257,8 @@ body{
             <span class="menu-tag ready">ready</span>
           </div>
           <div class="menu-item" data-type="cmy">
-            <div><div class="menu-item-label">RGB/CMY Star + K</div><div class="menu-item-desc">Additive vs. subtractive basis star, K as pull toward neutral</div></div>
-            <span class="menu-tag phase">phase 2</span>
+            <div><div class="menu-item-label">RGB/CMY Star + K/W</div><div class="menu-item-desc">Basis star — K pulls CMY toward black, W pulls RGB toward white</div></div>
+            <span class="menu-tag ready">ready</span>
           </div>
           <div class="menu-item" data-type="mobius">
             <div><div class="menu-item-label">Möbius Color Map</div><div class="menu-item-desc">A Three.js surface exploring the additive/subtractive transform</div></div>
@@ -269,6 +290,17 @@ function cmykToRgb(c,m,y,k){
     g:Math.round(255*(1-m)*(1-k)),
     b:Math.round(255*(1-y)*(1-k))
   };
+}
+// The additive mirror of CMYK's K: whatever R, G, and B share in common
+// (their floor, min(r,g,b)) is physically indistinguishable from a single
+// white light of that intensity added underneath — same logic printers use
+// to pull K out of overlapping C+M+Y (Gray Component Replacement), run in
+// reverse. At least one of R',G',B' is always exactly zero: the additive
+// side's own version of "always degenerate without the extra axis."
+function toRGBW(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255,w=Math.min(rr,gg,bb);
+  if(w>=1) return {R:0,G:0,B:0,w:1};
+  return {R:(rr-w)/(1-w), G:(gg-w)/(1-w), B:(bb-w)/(1-w), w};
 }
 function rgbToHue(r,g,b){
   const rr=r/255,gg=g/255,bb=b/255;
@@ -550,7 +582,7 @@ function drawEdgeColoredCuboid(ctx,s,anchor,far,alpha,labelText){
 const GRAPH_TYPES={
   cube:{label:'RGB Cube', tag:'ready', desc:'Additive light space — X=Red, Y=Green, Z=Blue.'},
   hsl:{label:'HSL/HSV Bicone', tag:'ready', desc:'Perceptual color — hue angle, saturation radius, lightness height.'},
-  cmy:{label:'RGB/CMY Star + K', tag:'phase 2', desc:'The additive/subtractive basis star, with K as movement toward neutral rather than a fourth axis. We already built this logic once, in the Two-Card Relationship lab — porting it here is next.'},
+  cmy:{label:'RGB/CMY Star + K/W', tag:'ready', desc:'The additive/subtractive basis star. K pulls the CMY-ink triangle down toward black; W (the additive mirror of Gray Component Replacement) pulls RGB\'s own chroma up toward white. Three exact readings of one point.'},
   mobius:{label:'Möbius Color Map', tag:'phase 3', desc:'A real Three.js surface, orbit-controllable, exploring the transformation between additive and subtractive color as a single continuous strip.'}
 };
 
@@ -603,6 +635,7 @@ function renderWorkspace(){
     const body=el.querySelector('.graph-panel-body');
     if(p.type==='cube') buildCubePanelBody(body,p);
     else if(p.type==='hsl') buildHSLPanelBody(body,p);
+    else if(p.type==='cmy') buildStarPanelBody(body,p);
     else buildPlaceholderBody(body,info);
   });
   ws.querySelectorAll('.eye-btn').forEach(b=>b.addEventListener('click',()=>toggleVisible(b.dataset.id)));
@@ -621,6 +654,58 @@ function buildPlaceholderBody(container,info){
 // the angle pair that gives all three axes equal foreshortening.
 const ISO_ROT_Y = Math.PI/4;
 const ISO_ROT_X = Math.atan(1/Math.sqrt(2));
+
+// ════════════════════════════════════════════════════════
+// VIEW CUBE — Maya-style corner widget: click a face to snap the camera
+// there, or nudge with the arrows. Angle-normalization + nearest-match lets
+// the center label always reflect the actual current view, even after a
+// manual drag.
+// ════════════════════════════════════════════════════════
+const VIEW_PRESETS={
+  FRONT:{rotX:0,rotY:0},
+  BACK:{rotX:0,rotY:Math.PI},
+  LEFT:{rotX:0,rotY:-Math.PI/2},
+  RIGHT:{rotX:0,rotY:Math.PI/2},
+  TOP:{rotX:-Math.PI/2,rotY:0},
+  BOTTOM:{rotX:Math.PI/2,rotY:0}
+};
+function normAngle(a){ a=a%(2*Math.PI); if(a>Math.PI)a-=2*Math.PI; if(a<-Math.PI)a+=2*Math.PI; return a; }
+function nearestViewName(panel){
+  const rx=normAngle(panel.rotX), ry=normAngle(panel.rotY);
+  for(const name in VIEW_PRESETS){
+    const p=VIEW_PRESETS[name];
+    if(Math.abs(normAngle(rx-p.rotX))<0.05 && Math.abs(normAngle(ry-p.rotY))<0.05) return name;
+  }
+  if(Math.abs(normAngle(rx-ISO_ROT_X))<0.05 && Math.abs(normAngle(ry-ISO_ROT_Y))<0.05) return 'ISO';
+  return 'FREE';
+}
+const VIEW_STEP=Math.PI/8; // 22.5° nudge per arrow click
+
+function buildViewCube(container,panel,onChange){
+  const slot=container.querySelector('.gp-viewcube-slot');
+  const wrap=document.createElement('div');
+  wrap.className='gp-viewcube';
+  wrap.innerHTML=`
+    <button class="vc-btn vc-up" title="Tilt up">▲</button>
+    <button class="vc-btn vc-left" title="Turn left">◀</button>
+    <button class="vc-btn vc-center" title="Reset to Front"><span class="vc-label">FRONT</span></button>
+    <button class="vc-btn vc-right" title="Turn right">▶</button>
+    <button class="vc-btn vc-down" title="Tilt down">▼</button>
+  `;
+  (slot||container).appendChild(wrap);
+  const label=wrap.querySelector('.vc-label');
+  function refresh(){ label.textContent=nearestViewName(panel); }
+  wrap.querySelector('.vc-up').addEventListener('click',()=>{ panel.rotX-=VIEW_STEP; onChange(); refresh(); });
+  wrap.querySelector('.vc-down').addEventListener('click',()=>{ panel.rotX+=VIEW_STEP; onChange(); refresh(); });
+  wrap.querySelector('.vc-left').addEventListener('click',()=>{ panel.rotY-=VIEW_STEP; onChange(); refresh(); });
+  wrap.querySelector('.vc-right').addEventListener('click',()=>{ panel.rotY+=VIEW_STEP; onChange(); refresh(); });
+  wrap.querySelector('.vc-center').addEventListener('click',()=>{
+    panel.rotX=VIEW_PRESETS.FRONT.rotX; panel.rotY=VIEW_PRESETS.FRONT.rotY;
+    onChange(); refresh();
+  });
+  panel._vcRefresh=refresh;
+  refresh();
+}
 
 // ════════════════════════════════════════════════════════
 // DRAGGABLE COLOR POINTS
@@ -653,25 +738,26 @@ function dragParamsByScreenDelta(params, projectFn, dxScreen, dyScreen, eps){
 // Combined wiring: drag the background to rotate the view (unless locked),
 // or grab the color point itself (always draggable, even while view-locked)
 // to move it — which recomputes the universal color live.
+// The canvas draws using its internal bitmap grid (canvas.width/height),
+// but CSS stretches it to fill the panel — which can be a very different
+// size. Mouse/touch coordinates arrive in the *displayed* pixel space, so
+// they must be rescaled into the *bitmap* space before comparing against
+// anything the draw functions computed (like a dot's position).
+function canvasToBitmapSpace(canvas,px,py){
+  const scaleX=canvas.width/canvas.clientWidth;
+  const scaleY=canvas.height/canvas.clientHeight;
+  return {x:px*scaleX, y:py*scaleY};
+}
+
 function wireDragWithPoint(canvas,panel,cfg){
   let mode=null; // null | 'view' | 'point'
   let lx=0,ly=0;
-  // The canvas draws using its internal bitmap grid (canvas.width/height),
-  // but CSS stretches it to fill the panel — which can be a very different
-  // size. Mouse/touch coordinates arrive in the *displayed* pixel space, so
-  // they must be rescaled into the *bitmap* space before comparing against
-  // anything the draw functions computed (like the dot's position).
-  function toBitmapSpace(px,py){
-    const scaleX=canvas.width/canvas.clientWidth;
-    const scaleY=canvas.height/canvas.clientHeight;
-    return {x:px*scaleX, y:py*scaleY};
-  }
   function updateCursor(){
     if(mode==='point'||mode==='view'){ canvas.style.cursor='grabbing'; return; }
     canvas.style.cursor=panel.locked?'not-allowed':'grab';
   }
   function begin(rawX,rawY){
-    const {x:offsetX,y:offsetY}=toBitmapSpace(rawX,rawY);
+    const {x:offsetX,y:offsetY}=canvasToBitmapSpace(canvas,rawX,rawY);
     const dot=cfg.projectFn(cfg.getParams());
     const dx=offsetX-dot.sx, dy=offsetY-dot.sy;
     if(dx*dx+dy*dy<=cfg.hitRadius*cfg.hitRadius) mode='point';
@@ -681,7 +767,7 @@ function wireDragWithPoint(canvas,panel,cfg){
     updateCursor();
   }
   function move(rawX,rawY){
-    const {x:offsetX,y:offsetY}=toBitmapSpace(rawX,rawY);
+    const {x:offsetX,y:offsetY}=canvasToBitmapSpace(canvas,rawX,rawY);
     if(mode==='point'){
       const newParams=dragParamsByScreenDelta(cfg.getParams(), cfg.projectFn, offsetX-lx, offsetY-ly, cfg.eps);
       cfg.applyParams(newParams);
@@ -699,11 +785,80 @@ function wireDragWithPoint(canvas,panel,cfg){
     if(mode){ move(e.offsetX,e.offsetY); return; }
     // Not currently dragging — just give honest hover feedback: the dot is
     // always grabbable, even while the view is locked; empty space isn't.
-    const {x,y}=toBitmapSpace(e.offsetX,e.offsetY);
+    const {x,y}=canvasToBitmapSpace(canvas,e.offsetX,e.offsetY);
     const dot=cfg.projectFn(cfg.getParams());
     const dx=x-dot.sx, dy=y-dot.sy;
     const overDot=dx*dx+dy*dy<=cfg.hitRadius*cfg.hitRadius;
     canvas.style.cursor = overDot ? 'grab' : (panel.locked?'not-allowed':'grab');
+  });
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    begin(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  },{passive:false});
+  canvas.addEventListener('touchend',end);
+  canvas.addEventListener('touchmove',e=>{
+    if(!mode) return; e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    move(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  },{passive:false});
+  updateCursor();
+}
+
+// Same idea as wireDragWithPoint, but for graphs with more than one visible
+// dot at once (the Star's Roof / CMY+K / RGB+W points). Every candidate
+// point is really just the same underlying [r,g,b] pushed through a
+// different forward mapping, so grabbing whichever one is nearest the
+// mouse and running the same minimal-norm solver through *that* mapping
+// is enough — no separate logic needed per layer.
+function wireDragMultiPoint(canvas,panel,cfg){
+  let mode=null; // null | 'view' | 'point'
+  let activeProject=null;
+  let lx=0,ly=0;
+  function activePoints(){ return cfg.points.filter(p=>p.active()); }
+  function nearestHit(x,y){
+    const params=cfg.getParams();
+    let best=null,bestDistSq=Infinity;
+    activePoints().forEach(p=>{
+      const dot=p.projectFn(params);
+      const dx=x-dot.sx, dy=y-dot.sy, d2=dx*dx+dy*dy;
+      if(d2<=cfg.hitRadius*cfg.hitRadius && d2<bestDistSq){ best=p; bestDistSq=d2; }
+    });
+    return best;
+  }
+  function updateCursor(){
+    if(mode==='point'||mode==='view'){ canvas.style.cursor='grabbing'; return; }
+    canvas.style.cursor=panel.locked?'not-allowed':'grab';
+  }
+  function begin(rawX,rawY){
+    const {x,y}=canvasToBitmapSpace(canvas,rawX,rawY);
+    const hit=nearestHit(x,y);
+    if(hit){ mode='point'; activeProject=hit.projectFn; }
+    else if(!panel.locked){ mode='view'; }
+    else { mode=null; }
+    lx=x; ly=y;
+    updateCursor();
+  }
+  function move(rawX,rawY){
+    const {x,y}=canvasToBitmapSpace(canvas,rawX,rawY);
+    if(mode==='point'){
+      const newParams=dragParamsByScreenDelta(cfg.getParams(), activeProject, x-lx, y-ly, cfg.eps);
+      cfg.applyParams(newParams);
+    } else if(mode==='view'){
+      panel.rotY+=(x-lx)*0.01; panel.rotX+=(y-ly)*0.01;
+      cfg.onRedraw();
+    }
+    lx=x; ly=y;
+  }
+  function end(){ mode=null; activeProject=null; updateCursor(); }
+
+  canvas.addEventListener('mousedown',e=>begin(e.offsetX,e.offsetY));
+  window.addEventListener('mouseup',end);
+  canvas.addEventListener('mousemove',e=>{
+    if(mode){ move(e.offsetX,e.offsetY); return; }
+    const {x,y}=canvasToBitmapSpace(canvas,e.offsetX,e.offsetY);
+    const hit=nearestHit(x,y);
+    canvas.style.cursor = hit ? 'grab' : (panel.locked?'not-allowed':'grab');
   });
   canvas.addEventListener('touchstart',e=>{
     e.preventDefault();
@@ -774,6 +929,24 @@ function buildViewControls(container,panel,onChange){
   });
 }
 
+// Independent show/hide toggles for a graph's layers — used by the Star,
+// and available to any future graph type that has more than one layer.
+function buildLayerToggles(container,panel,layers,onChange){
+  const slot=container.querySelector('.gp-layer-toggles-slot');
+  const row=document.createElement('div');
+  row.className='gp-view-controls';
+  row.innerHTML=layers.map(l=>`<button class="gp-btn layer-btn${panel[l.key]?' active':''}" data-key="${l.key}">${l.label}</button>`).join('');
+  (slot||container).appendChild(row);
+  row.querySelectorAll('.layer-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const key=btn.dataset.key;
+      panel[key]=!panel[key];
+      btn.classList.toggle('active',panel[key]);
+      onChange();
+    });
+  });
+}
+
 // ── GRAPH: RGB CUBE ──
 function cubeProjector(panel,W,H){
   const SC=Math.min(W,H)*0.32;
@@ -783,7 +956,7 @@ function cubeProjector(panel,W,H){
 function buildCubePanelBody(container,panel){
   panel.canvasId='cv_'+panel.id;
   panel.readoutId='ro_'+panel.id;
-  container.innerHTML=`<div class="gp-view-controls-slot"></div><canvas id="${panel.canvasId}" width="320" height="290"></canvas><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><div class="gp-canvas-wrap"><canvas id="${panel.canvasId}" width="320" height="290"></canvas><div class="gp-viewcube-slot"></div></div><div class="gp-readout" id="${panel.readoutId}"></div>`;
   const canvas=document.getElementById(panel.canvasId);
   panel.redraw=()=>drawCubePanel(panel);
   wireDragWithPoint(canvas,panel,{
@@ -795,6 +968,7 @@ function buildCubePanelBody(container,panel){
     onRedraw:panel.redraw
   });
   buildViewControls(container,panel,panel.redraw);
+  buildViewCube(container,panel,panel.redraw);
   panel.redraw();
 }
 function drawCubePanel(panel){
@@ -807,17 +981,17 @@ function drawCubePanel(panel){
 
   const corners=[[0,0,0],[255,0,0],[255,255,0],[0,255,0],[0,0,255],[255,0,255],[255,255,255],[0,255,255]].map(([r,g,b])=>s(r,g,b));
   const wireEdges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-  ctx.strokeStyle='rgba(201,169,110,0.08)'; ctx.lineWidth=0.5;
+  ctx.strokeStyle='rgba(201,169,110,0.22)'; ctx.lineWidth=1.2;
   wireEdges.forEach(([ea,eb])=>{
     ctx.beginPath(); ctx.moveTo(corners[ea].sx,corners[ea].sy); ctx.lineTo(corners[eb].sx,corners[eb].sy); ctx.stroke();
   });
 
   const O=s(0,0,0);
-  [[255,0,0,'R','rgba(200,70,60,0.6)'],[0,255,0,'G','rgba(60,180,70,0.6)'],[0,0,255,'B','rgba(60,100,210,0.6)']].forEach(([r,g,b,lbl,col])=>{
+  [[255,0,0,'R','rgba(200,70,60,0.75)'],[0,255,0,'G','rgba(60,180,70,0.75)'],[0,0,255,'B','rgba(60,100,210,0.75)']].forEach(([r,g,b,lbl,col])=>{
     const p=s(r,g,b);
     ctx.beginPath(); ctx.moveTo(O.sx,O.sy); ctx.lineTo(p.sx,p.sy);
-    ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([3,5]); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font='bold 15px Cinzel,serif'; ctx.fillStyle=col.replace('0.6','0.9'); ctx.textAlign='left';
+    ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.setLineDash([3,5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font='bold 15px Cinzel,serif'; ctx.fillStyle=col.replace('0.75','0.95'); ctx.textAlign='left';
     ctx.fillText(lbl,p.sx+3,p.sy+3);
   });
 
@@ -831,6 +1005,7 @@ function drawCubePanel(panel){
   const dist=Math.sqrt(r*r+g*g+b*b);
   const readout=document.getElementById(panel.readoutId);
   if(readout) readout.innerHTML=`(${r}, ${g}, ${b}) &nbsp;·&nbsp; distance from origin ${dist.toFixed(1)} / 441.7 &nbsp;·&nbsp; ${((dist/441.7)*16).toFixed(2)}/16 &nbsp;·&nbsp; <em>drag the dot to set the color</em>`;
+  if(panel._vcRefresh) panel._vcRefresh();
 }
 
 // ── GRAPH: HSL/HSV BICONE ──
@@ -853,7 +1028,7 @@ function biconeParamsToXYZ(hue,sat,light){
 function buildHSLPanelBody(container,panel){
   panel.canvasId='cv_'+panel.id;
   panel.readoutId='ro_'+panel.id;
-  container.innerHTML=`<div class="gp-view-controls-slot"></div><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><div class="gp-canvas-wrap"><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-viewcube-slot"></div></div><div class="gp-readout" id="${panel.readoutId}"></div>`;
   const canvas=document.getElementById(panel.canvasId);
   panel.redraw=()=>drawHSLPanel(panel);
   wireDragWithPoint(canvas,panel,{
@@ -875,6 +1050,7 @@ function buildHSLPanelBody(container,panel){
     onRedraw:panel.redraw
   });
   buildViewControls(container,panel,panel.redraw);
+  buildViewCube(container,panel,panel.redraw);
   panel.redraw();
 }
 function drawHSLPanel(panel){
@@ -887,7 +1063,7 @@ function drawHSLPanel(panel){
 
   const zTop=s(0,0,1), zBot=s(0,0,-1);
   ctx.beginPath(); ctx.moveTo(zBot.sx,zBot.sy); ctx.lineTo(zTop.sx,zTop.sy);
-  ctx.strokeStyle='rgba(220,220,220,0.35)'; ctx.lineWidth=1; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle='rgba(220,220,220,0.5)'; ctx.lineWidth=1.6; ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
   ctx.font='bold 14px Cinzel,serif'; ctx.fillStyle='rgba(220,220,220,0.7)'; ctx.textAlign='center';
   ctx.fillText('white · L=1',zTop.sx,zTop.sy-10);
   ctx.fillText('black · L=0',zBot.sx,zBot.sy+16);
@@ -906,7 +1082,7 @@ function drawHSLPanel(panel){
       const col=hslToRgb(hue,1,l);
       if(prevPt){
         ctx.beginPath(); ctx.moveTo(prevPt.sx,prevPt.sy); ctx.lineTo(pt.sx,pt.sy);
-        ctx.strokeStyle=`rgba(${col.r},${col.g},${col.b},0.55)`; ctx.lineWidth=1.1; ctx.stroke();
+        ctx.strokeStyle=`rgba(${col.r},${col.g},${col.b},0.7)`; ctx.lineWidth=1.7; ctx.stroke();
       }
       prevPt=pt;
     }
@@ -921,7 +1097,7 @@ function drawHSLPanel(panel){
       const pt=s(rad*Math.cos(ang), rad*Math.sin(ang), z);
       if(prevPt){
         ctx.beginPath(); ctx.moveTo(prevPt.sx,prevPt.sy); ctx.lineTo(pt.sx,pt.sy);
-        ctx.strokeStyle='rgba(201,169,110,0.12)'; ctx.lineWidth=0.6; ctx.stroke();
+        ctx.strokeStyle='rgba(201,169,110,0.28)'; ctx.lineWidth=1.1; ctx.stroke();
       }
       prevPt=pt;
     }
@@ -948,6 +1124,304 @@ function drawHSLPanel(panel){
 
   const readout=document.getElementById(panel.readoutId);
   if(readout) readout.innerHTML=`H ${hh.toFixed(0)}° &nbsp;·&nbsp; S ${(sat*100).toFixed(0)}% &nbsp;·&nbsp; L ${(light*100).toFixed(0)}% &nbsp;·&nbsp; <em>drag the dot to set the color</em>`;
+  if(panel._vcRefresh) panel._vcRefresh();
+}
+
+// ── GRAPH: RGB/CMY STAR + K/W ──
+// A hexagram sitting in the z=0 plane: the RGB triangle (exact, no reduction —
+// it never needed K to have dimension) and its mirror, the CMY triangle
+// (reflection of each RGB corner through center — C opposite R, M opposite G,
+// Y opposite B). That flat CMY triangle is the "ink alone" reading, and like
+// the Cube's CMY face, it's provably always missing a dimension: whichever
+// channel is the source color's maximum has zero ink, full stop.
+//
+// K supplies the missing dimension by pulling that flat triangle straight
+// down a lerp toward a single black apex — at K=0 no drop at all, at K=1
+// every hue's ink-triangle has collapsed to the same point. That's the
+// pyramid. And by the identical logic mirrored upward: W (the additive
+// analog of Gray Component Replacement — whatever R,G,B share as a common
+// floor is one white light hiding under three) pulls the RGB triangle's own
+// *chroma-only* reading (R',G',B', with the shared floor removed) up toward
+// a white apex the same way. Three exact readings of one point, stacked.
+const STAR_H=1.15;
+const STAR_V={
+  R:{x:0,y:-1,z:0}, G:{x:-0.866,y:0.5,z:0}, B:{x:0.866,y:0.5,z:0},
+};
+STAR_V.C={x:-STAR_V.R.x,y:-STAR_V.R.y,z:0};
+STAR_V.M={x:-STAR_V.G.x,y:-STAR_V.G.y,z:0};
+STAR_V.Y={x:-STAR_V.B.x,y:-STAR_V.B.y,z:0};
+const STAR_CENTER={x:0,y:0,z:0};
+
+function lerp3(a,b,t){ return {x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, z:a.z+(b.z-a.z)*t}; }
+// Each vertex is independently pulled in from its own corner toward center by
+// its own channel's fraction — the exact "vector" treatment from the card
+// comparison lab's 2D triangle, not a raw weighted sum. Critically, this is
+// what keeps every vertex bounded between center and its corner, so the
+// resulting triangle can never escape the hexagram the way a vector-sum can.
+function starVertexSet(fracA,fracB,fracC, cornerA,cornerB,cornerC){
+  return [
+    lerp3(STAR_CENTER,cornerA,fracA),
+    lerp3(STAR_CENTER,cornerB,fracB),
+    lerp3(STAR_CENTER,cornerC,fracC)
+  ];
+}
+function liftVerts(verts,apex,t){ return verts.map(v=>lerp3(v,apex,t)); }
+function centroid3(verts){
+  const n=verts.length;
+  return {
+    x:verts.reduce((s,v)=>s+v.x,0)/n,
+    y:verts.reduce((s,v)=>s+v.y,0)/n,
+    z:verts.reduce((s,v)=>s+v.z,0)/n
+  };
+}
+function projPt(s,pt){ return s(pt.x,pt.y,pt.z); }
+
+function starRoofVerts(rn,gn,bn){ return starVertexSet(rn,gn,bn, STAR_V.R,STAR_V.G,STAR_V.B); }
+function starCMYKGhostVerts(cn,mn,yn){ return starVertexSet(cn,mn,yn, STAR_V.C,STAR_V.M,STAR_V.Y); }
+function starCMYKVerts(cn,mn,yn,k){ return liftVerts(starCMYKGhostVerts(cn,mn,yn), {x:0,y:0,z:-STAR_H}, k); }
+function starRGBWGhostVerts(Rn,Gn,Bn){ return starVertexSet(Rn,Gn,Bn, STAR_V.R,STAR_V.G,STAR_V.B); }
+function starRGBWVerts(Rn,Gn,Bn,w){ return liftVerts(starRGBWGhostVerts(Rn,Gn,Bn), {x:0,y:0,z:STAR_H}, w); }
+
+// The color pure ink alone would produce, ignoring K entirely — same
+// "reconstruction" quantity the Cube's K-extension box is built from.
+function cmyReconColor(cn,mn,yn){ return {r:255*(1-cn), g:255*(1-mn), b:255*(1-yn)}; }
+// The color at full saturation with the shared white floor removed —
+// RGBW's mirror of the same idea.
+function rgbwChromaColor(Rn,Gn,Bn){ return {r:Rn*255, g:Gn*255, b:Bn*255}; }
+
+function starProjector(panel,W,H){
+  const SC=Math.min(W,H)*0.30;
+  return (x,y,z)=>project3D(x*SC,y*SC,z*SC,panel.rotX,panel.rotY,W,H);
+}
+
+function buildStarPanelBody(container,panel){
+  panel.canvasId='cv_'+panel.id;
+  panel.readoutId='ro_'+panel.id;
+  if(panel.showRoof===undefined) panel.showRoof=true;
+  if(panel.showCMYRoof===undefined) panel.showCMYRoof=true;
+  if(panel.showCMYK===undefined) panel.showCMYK=true;
+  if(panel.showRGBW===undefined) panel.showRGBW=true;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><div class="gp-layer-toggles-slot"></div><div class="gp-canvas-wrap"><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-viewcube-slot"></div></div><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  const canvas=document.getElementById(panel.canvasId);
+  panel.redraw=()=>drawStarPanel(panel);
+
+  // The draggable "point" for a layer is that layer's own triangle centroid —
+  // always well-defined, always inside the shape that's actually drawn.
+  function starProjFor(kind){
+    return (params)=>{
+      const [r,g,b]=params;
+      const s=starProjector(panel,canvas.width,canvas.height);
+      let verts;
+      if(kind==='roof'){
+        verts=starRoofVerts(r/255,g/255,b/255);
+      } else if(kind==='cmyRoof'){
+        const cmyk=toCMYK(r,g,b);
+        verts=starCMYKGhostVerts(cmyk.c,cmyk.m,cmyk.y);
+      } else if(kind==='cmyk'){
+        const cmyk=toCMYK(r,g,b);
+        verts=starCMYKVerts(cmyk.c,cmyk.m,cmyk.y,cmyk.k);
+      } else {
+        const rgbw=toRGBW(r,g,b);
+        verts=starRGBWVerts(rgbw.R,rgbw.G,rgbw.B,rgbw.w);
+      }
+      const cen=centroid3(verts);
+      return s(cen.x,cen.y,cen.z);
+    };
+  }
+
+  wireDragMultiPoint(canvas,panel,{
+    getParams:()=>[currentColor.r,currentColor.g,currentColor.b],
+    applyParams:(p)=>setColor(p[0],p[1],p[2],'drag-point'),
+    eps:[2,2,2],
+    hitRadius:14,
+    onRedraw:panel.redraw,
+    points:[
+      {projectFn:starProjFor('roof'), active:()=>panel.showRoof},
+      {projectFn:starProjFor('cmyRoof'), active:()=>panel.showCMYRoof},
+      {projectFn:starProjFor('cmyk'), active:()=>panel.showCMYK},
+      {projectFn:starProjFor('rgbw'), active:()=>panel.showRGBW}
+    ]
+  });
+
+  buildViewControls(container,panel,panel.redraw);
+  buildLayerToggles(container,panel,[
+    {key:'showRoof', label:'△ RGB Roof'},
+    {key:'showCMYRoof', label:'▽ CMY Roof'},
+    {key:'showCMYK', label:'▼ CMY + K'},
+    {key:'showRGBW', label:'▲ RGB + W'}
+  ], panel.redraw);
+  buildViewCube(container,panel,panel.redraw);
+  panel.redraw();
+}
+
+function starDrawGlowDot(ctx,dot,r,g,b){
+  const gr=ctx.createRadialGradient(dot.sx,dot.sy,0,dot.sx,dot.sy,13);
+  gr.addColorStop(0,`rgba(${r},${g},${b},0.55)`); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,13,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,4.5,0,Math.PI*2); ctx.fillStyle=`rgb(${r},${g},${b})`; ctx.fill();
+  ctx.beginPath(); ctx.arc(dot.sx,dot.sy,6.5,0,Math.PI*2); ctx.strokeStyle='rgba(201,169,110,0.85)'; ctx.lineWidth=1.2; ctx.stroke();
+}
+
+// A full 3D frustum: the base triangle (pure ink / pure chroma, solid) and
+// the top triangle (the true color, solid) with the three connecting edges
+// and gradient-filled side faces drawn between them — so the "this base
+// becomes this top" relationship reads as one connected shape, not two
+// separate flat pieces floating near each other.
+function drawStarFrustum(ctx,s,baseVerts,topVerts,baseColor,topColor){
+  const basePts=baseVerts.map(v=>s(v.x,v.y,v.z));
+  const topPts=topVerts.map(v=>s(v.x,v.y,v.z));
+
+  // Side faces first (so the solid caps read cleanly on top of them).
+  for(let i=0;i<3;i++){
+    const j=(i+1)%3;
+    const faceBaseCen={sx:(basePts[i].sx+basePts[j].sx)/2, sy:(basePts[i].sy+basePts[j].sy)/2};
+    const faceTopCen={sx:(topPts[i].sx+topPts[j].sx)/2, sy:(topPts[i].sy+topPts[j].sy)/2};
+    const grad=ctx.createLinearGradient(faceBaseCen.sx,faceBaseCen.sy,faceTopCen.sx,faceTopCen.sy);
+    grad.addColorStop(0,`rgba(${baseColor.r|0},${baseColor.g|0},${baseColor.b|0},0.32)`);
+    grad.addColorStop(1,`rgba(${topColor.r|0},${topColor.g|0},${topColor.b|0},0.32)`);
+    ctx.beginPath();
+    ctx.moveTo(basePts[i].sx,basePts[i].sy); ctx.lineTo(basePts[j].sx,basePts[j].sy);
+    ctx.lineTo(topPts[j].sx,topPts[j].sy); ctx.lineTo(topPts[i].sx,topPts[i].sy);
+    ctx.closePath();
+    ctx.fillStyle=grad; ctx.fill();
+  }
+
+  // Base triangle — solid, the "if this dimension were 0" reading.
+  ctx.beginPath(); ctx.moveTo(basePts[0].sx,basePts[0].sy); ctx.lineTo(basePts[1].sx,basePts[1].sy); ctx.lineTo(basePts[2].sx,basePts[2].sy); ctx.closePath();
+  ctx.fillStyle=`rgba(${baseColor.r|0},${baseColor.g|0},${baseColor.b|0},0.45)`; ctx.fill();
+  ctx.strokeStyle=`rgba(${baseColor.r|0},${baseColor.g|0},${baseColor.b|0},0.85)`; ctx.lineWidth=1.7; ctx.stroke();
+
+  // Top triangle — solid, the true color.
+  ctx.beginPath(); ctx.moveTo(topPts[0].sx,topPts[0].sy); ctx.lineTo(topPts[1].sx,topPts[1].sy); ctx.lineTo(topPts[2].sx,topPts[2].sy); ctx.closePath();
+  ctx.fillStyle=`rgba(${topColor.r|0},${topColor.g|0},${topColor.b|0},0.5)`; ctx.fill();
+  ctx.strokeStyle=`rgba(${topColor.r|0},${topColor.g|0},${topColor.b|0},0.95)`; ctx.lineWidth=1.9; ctx.stroke();
+
+  // Connecting edges, crisp, on top — the "you can see the connection" part.
+  for(let i=0;i<3;i++){
+    ctx.beginPath(); ctx.moveTo(basePts[i].sx,basePts[i].sy); ctx.lineTo(topPts[i].sx,topPts[i].sy);
+    ctx.strokeStyle=`rgba(${topColor.r|0},${topColor.g|0},${topColor.b|0},0.55)`; ctx.lineWidth=1.3; ctx.stroke();
+  }
+
+  return {basePts,topPts};
+}
+
+function drawStarPanel(panel){
+  const canvas=document.getElementById(panel.canvasId);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#06040e'; ctx.fillRect(0,0,W,H);
+  const s=starProjector(panel,W,H);
+  const P=(v)=>s(v.x,v.y,v.z);
+
+  // Base hexagram at z=0 — always shown as the reference frame. Bolder now.
+  const pR=P(STAR_V.R), pG=P(STAR_V.G), pB=P(STAR_V.B);
+  const pC=P(STAR_V.C), pM=P(STAR_V.M), pY=P(STAR_V.Y);
+  ctx.beginPath(); ctx.moveTo(pR.sx,pR.sy); ctx.lineTo(pG.sx,pG.sy); ctx.lineTo(pB.sx,pB.sy); ctx.closePath();
+  ctx.strokeStyle='rgba(201,169,110,0.4)'; ctx.lineWidth=1.6; ctx.stroke();
+  ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(pC.sx,pC.sy); ctx.lineTo(pM.sx,pM.sy); ctx.lineTo(pY.sx,pY.sy); ctx.closePath();
+  ctx.strokeStyle='rgba(180,180,230,0.4)'; ctx.lineWidth=1.6; ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font='bold 15px Cinzel,serif'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(220,80,70,0.85)'; ctx.fillText('R',pR.sx,pR.sy-10);
+  ctx.fillStyle='rgba(70,200,80,0.85)'; ctx.fillText('G',pG.sx-14,pG.sy+14);
+  ctx.fillStyle='rgba(70,120,220,0.85)'; ctx.fillText('B',pB.sx+14,pB.sy+14);
+  ctx.fillStyle='rgba(70,210,220,0.85)'; ctx.fillText('C',pC.sx,pC.sy+16);
+  ctx.fillStyle='rgba(230,70,210,0.85)'; ctx.fillText('M',pM.sx+14,pM.sy-8);
+  ctx.fillStyle='rgba(230,220,60,0.85)'; ctx.fillText('Y',pY.sx-14,pY.sy-8);
+
+  const O=P(STAR_CENTER);
+  ctx.beginPath(); ctx.arc(O.sx,O.sy,3,0,Math.PI*2); ctx.fillStyle='rgba(201,169,110,0.45)'; ctx.fill();
+
+  const {r,g,b}=currentColor;
+  const rn=r/255,gn=g/255,bn=b/255;
+  const cmyk=toCMYK(r,g,b);
+  const rgbw=toRGBW(r,g,b);
+  const centroidScreens=[];
+
+  // ── RGB Roof — exact, flat, no lift. The one that never needed a 4th axis.
+  if(panel.showRoof){
+    const verts=starRoofVerts(rn,gn,bn);
+    const pts=verts.map(v=>s(v.x,v.y,v.z));
+    ctx.beginPath(); ctx.moveTo(pts[0].sx,pts[0].sy); ctx.lineTo(pts[1].sx,pts[1].sy); ctx.lineTo(pts[2].sx,pts[2].sy); ctx.closePath();
+    ctx.fillStyle=`rgba(${r},${g},${b},0.32)`; ctx.fill();
+    ctx.strokeStyle=`rgba(${r},${g},${b},0.9)`; ctx.lineWidth=1.8; ctx.stroke();
+    const cenPt=projPt(s,centroid3(verts));
+    starDrawGlowDot(ctx,cenPt,r,g,b);
+    centroidScreens.push(cenPt);
+  }
+
+  // ── CMY Roof — the flat ink-only reading, filled solid with the pure
+  // reconstruction color (what pure ink alone looks like, no K).
+  if(panel.showCMYRoof){
+    const verts=starCMYKGhostVerts(cmyk.c,cmyk.m,cmyk.y);
+    const pts=verts.map(v=>s(v.x,v.y,v.z));
+    const reconColor=cmyReconColor(cmyk.c,cmyk.m,cmyk.y);
+    ctx.beginPath(); ctx.moveTo(pts[0].sx,pts[0].sy); ctx.lineTo(pts[1].sx,pts[1].sy); ctx.lineTo(pts[2].sx,pts[2].sy); ctx.closePath();
+    ctx.fillStyle=`rgba(${reconColor.r|0},${reconColor.g|0},${reconColor.b|0},0.38)`; ctx.fill();
+    ctx.strokeStyle=`rgba(${reconColor.r|0},${reconColor.g|0},${reconColor.b|0},0.9)`; ctx.lineWidth=1.8; ctx.stroke();
+    const cenPt=projPt(s,centroid3(verts));
+    starDrawGlowDot(ctx,cenPt,reconColor.r,reconColor.g,reconColor.b);
+    centroidScreens.push(cenPt);
+  }
+
+  // ── CMY + K — the full pyramid boundary (dashed, per-corner colored, from
+  // the fixed hexagram corners down to the black apex) plus this color's own
+  // frustum: base = pure ink at z=0, top = true color at the K-height,
+  // connected as one solid so the relationship is visible, not implied.
+  if(panel.showCMYK){
+    const apexB=P({x:0,y:0,z:-STAR_H});
+    [[pC,'rgba(70,210,220,0.65)'],[pM,'rgba(230,70,210,0.65)'],[pY,'rgba(230,220,60,0.65)']].forEach(([p,col])=>{
+      ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.lineTo(apexB.sx,apexB.sy);
+      ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    });
+    ctx.font='bold 12px EB Garamond,serif'; ctx.fillStyle='rgba(200,200,200,0.65)'; ctx.textAlign='center';
+    ctx.fillText('black · K=1',apexB.sx,apexB.sy+16);
+
+    const baseVerts=starCMYKGhostVerts(cmyk.c,cmyk.m,cmyk.y);
+    const topVerts=starCMYKVerts(cmyk.c,cmyk.m,cmyk.y,cmyk.k);
+    const reconColor=cmyReconColor(cmyk.c,cmyk.m,cmyk.y);
+    drawStarFrustum(ctx,s,baseVerts,topVerts,reconColor,{r,g,b});
+    const curCenPt=projPt(s,centroid3(topVerts));
+    starDrawGlowDot(ctx,curCenPt,r,g,b);
+    centroidScreens.push(curCenPt);
+  }
+
+  // ── RGB + W — same treatment, mirrored: pyramid boundary from the fixed
+  // R/G/B corners up to the white apex, plus this color's frustum from pure
+  // chroma (base) to the true color (top).
+  if(panel.showRGBW){
+    const apexW=P({x:0,y:0,z:STAR_H});
+    [[pR,'rgba(220,80,70,0.65)'],[pG,'rgba(70,200,80,0.65)'],[pB,'rgba(70,120,220,0.65)']].forEach(([p,col])=>{
+      ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.lineTo(apexW.sx,apexW.sy);
+      ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    });
+    ctx.font='bold 12px EB Garamond,serif'; ctx.fillStyle='rgba(235,235,235,0.8)'; ctx.textAlign='center';
+    ctx.fillText('white · W=1',apexW.sx,apexW.sy-12);
+
+    const baseVerts=starRGBWGhostVerts(rgbw.R,rgbw.G,rgbw.B);
+    const topVerts=starRGBWVerts(rgbw.R,rgbw.G,rgbw.B,rgbw.w);
+    const chromaCol=rgbwChromaColor(rgbw.R,rgbw.G,rgbw.B);
+    drawStarFrustum(ctx,s,baseVerts,topVerts,chromaCol,{r,g,b});
+    const curCenPt=projPt(s,centroid3(topVerts));
+    starDrawGlowDot(ctx,curCenPt,r,g,b);
+    centroidScreens.push(curCenPt);
+  }
+
+  // Thin connectors tying the visible layers together — same particle, several depths.
+  if(centroidScreens.length>1){
+    ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1; ctx.setLineDash([1,3]);
+    for(let i=0;i<centroidScreens.length-1;i++){
+      ctx.beginPath(); ctx.moveTo(centroidScreens[i].sx,centroidScreens[i].sy); ctx.lineTo(centroidScreens[i+1].sx,centroidScreens[i+1].sy); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  const readout=document.getElementById(panel.readoutId);
+  if(readout) readout.innerHTML=`K ${(cmyk.k*100).toFixed(0)}% &nbsp;·&nbsp; W ${(rgbw.w*100).toFixed(0)}% &nbsp;·&nbsp; <em>drag any visible shape to set the color</em>`;
+  if(panel._vcRefresh) panel._vcRefresh();
 }
 
 // ════════════════════════════════════════════════════════
