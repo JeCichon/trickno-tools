@@ -302,6 +302,17 @@ function toRGBW(r,g,b){
   if(w>=1) return {R:0,G:0,B:0,w:1};
   return {R:(rr-w)/(1-w), G:(gg-w)/(1-w), B:(bb-w)/(1-w), w};
 }
+// The simpler alternative: just subtract the floor and stop — no stretching
+// back out to fill the remaining room. R'+w reconstructs r exactly either
+// way (trivially, since it's just addition), but the *shape* of the
+// remainder differs: this version answers "how much is literally left,"
+// where toRGBW() answers "how full is what's left, relative to how much
+// room there was." Same floor, two honest readings of what's above it.
+function toRGBWRaw(r,g,b){
+  const rr=r/255,gg=g/255,bb=b/255,w=Math.min(rr,gg,bb);
+  return {R:rr-w, G:gg-w, B:bb-w, w};
+}
+function getRGBW(r,g,b,formula){ return formula==='raw' ? toRGBWRaw(r,g,b) : toRGBW(r,g,b); }
 function rgbToHue(r,g,b){
   const rr=r/255,gg=g/255,bb=b/255;
   const mx=Math.max(rr,gg,bb),mn=Math.min(rr,gg,bb),d=mx-mn;
@@ -947,6 +958,25 @@ function buildLayerToggles(container,panel,layers,onChange){
   });
 }
 
+// A small mutually-exclusive switch for comparing two formula variants
+// directly on the graph — e.g. Normalized vs Raw for RGB+W, or Pure Black
+// vs Theoretical Black for CMY Roof.
+function buildOptionSwitch(container,slotClass,panel,key,defaultVal,options,onChange){
+  if(panel[key]===undefined) panel[key]=defaultVal;
+  const slot=container.querySelector(slotClass);
+  const row=document.createElement('div');
+  row.className='gp-view-controls';
+  row.innerHTML=options.map(o=>`<button class="gp-btn opt-btn${panel[key]===o.value?' active':''}" data-value="${o.value}">${o.label}</button>`).join('');
+  (slot||container).appendChild(row);
+  row.querySelectorAll('.opt-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      panel[key]=btn.dataset.value;
+      row.querySelectorAll('.opt-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      onChange();
+    });
+  });
+}
+
 // ── GRAPH: RGB CUBE ──
 function cubeProjector(panel,W,H){
   const SC=Math.min(W,H)*0.32;
@@ -1181,6 +1211,11 @@ function starCMYKGhostVerts(cn,mn,yn){ return starVertexSet(cn,mn,yn, STAR_V.C,S
 function starCMYKVerts(cn,mn,yn,k){ return liftVerts(starCMYKGhostVerts(cn,mn,yn), {x:0,y:0,z:-STAR_H}, k); }
 function starRGBWGhostVerts(Rn,Gn,Bn){ return starVertexSet(Rn,Gn,Bn, STAR_V.R,STAR_V.G,STAR_V.B); }
 function starRGBWVerts(Rn,Gn,Bn,w){ return liftVerts(starRGBWGhostVerts(Rn,Gn,Bn), {x:0,y:0,z:STAR_H}, w); }
+// K isn't assumed by C,M,Y — a pure gray has c=m=y=0 exactly, so the ink
+// triangle alone shows nothing for it. This gives K its own triangle on the
+// same corners, scaled uniformly (k,k,k) rather than by hue — at k=1 it
+// fills the entire C-M-Y triangle, matching a true black card exactly.
+function starKVerts(k){ return starVertexSet(k,k,k, STAR_V.C,STAR_V.M,STAR_V.Y); }
 
 // The color pure ink alone would produce, ignoring K entirely — same
 // "reconstruction" quantity the Cube's K-extension box is built from.
@@ -1188,6 +1223,11 @@ function cmyReconColor(cn,mn,yn){ return {r:255*(1-cn), g:255*(1-mn), b:255*(1-y
 // The color at full saturation with the shared white floor removed —
 // RGBW's mirror of the same idea.
 function rgbwChromaColor(Rn,Gn,Bn){ return {r:Rn*255, g:Gn*255, b:Bn*255}; }
+// Real C+M+Y ink, printed with no K at all, doesn't reach true black — it
+// prints as a dark muddy brown (ink impurity, not math). This is a
+// representative approximation for that "theoretical black," not a
+// precise industry constant — real ink/paper combinations vary.
+const THEORETICAL_CMY_BLACK={r:35,g:24,b:20};
 
 function starProjector(panel,W,H){
   const SC=Math.min(W,H)*0.30;
@@ -1201,7 +1241,7 @@ function buildStarPanelBody(container,panel){
   if(panel.showCMYRoof===undefined) panel.showCMYRoof=true;
   if(panel.showCMYK===undefined) panel.showCMYK=true;
   if(panel.showRGBW===undefined) panel.showRGBW=true;
-  container.innerHTML=`<div class="gp-view-controls-slot"></div><div class="gp-layer-toggles-slot"></div><div class="gp-canvas-wrap"><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-viewcube-slot"></div></div><div class="gp-readout" id="${panel.readoutId}"></div>`;
+  container.innerHTML=`<div class="gp-view-controls-slot"></div><div class="gp-layer-toggles-slot"></div><div class="gp-option-switch-slot"></div><div class="gp-canvas-wrap"><canvas id="${panel.canvasId}" width="320" height="320"></canvas><div class="gp-viewcube-slot"></div></div><div class="gp-readout" id="${panel.readoutId}"></div>`;
   const canvas=document.getElementById(panel.canvasId);
   panel.redraw=()=>drawStarPanel(panel);
 
@@ -1221,7 +1261,7 @@ function buildStarPanelBody(container,panel){
         const cmyk=toCMYK(r,g,b);
         verts=starCMYKVerts(cmyk.c,cmyk.m,cmyk.y,cmyk.k);
       } else {
-        const rgbw=toRGBW(r,g,b);
+        const rgbw=getRGBW(r,g,b,panel.rgbwFormula);
         verts=starRGBWVerts(rgbw.R,rgbw.G,rgbw.B,rgbw.w);
       }
       const cen=centroid3(verts);
@@ -1250,6 +1290,14 @@ function buildStarPanelBody(container,panel){
     {key:'showCMYK', label:'▼ CMY + K'},
     {key:'showRGBW', label:'▲ RGB + W'}
   ], panel.redraw);
+  buildOptionSwitch(container,'.gp-option-switch-slot',panel,'rgbwFormula','normalized',[
+    {value:'normalized', label:'W: Normalized'},
+    {value:'raw', label:'W: Raw Subtract'}
+  ], panel.redraw);
+  buildOptionSwitch(container,'.gp-option-switch-slot',panel,'cmyBlackMode','pure',[
+    {value:'pure', label:'K: Pure Black'},
+    {value:'theoretical', label:'K: Theoretical Brown'}
+  ], panel.redraw);
   buildViewCube(container,panel,panel.redraw);
   panel.redraw();
 }
@@ -1267,6 +1315,32 @@ function starDrawGlowDot(ctx,dot,r,g,b){
 // and gradient-filled side faces drawn between them — so the "this base
 // becomes this top" relationship reads as one connected shape, not two
 // separate flat pieces floating near each other.
+// Fills triAPts, but leaves it transparent anywhere triBPts overlaps it —
+// so where the two star triangles share ground (the hexagon at their
+// center), neither tint shows, and only the points unique to the tinted
+// triangle stand out. Built with an evenodd clip (canvas rect + the
+// exclude-triangle as a second subpath = a "donut" region), not a second
+// composite pass, so it can't bleed into anything drawn earlier.
+function fillTriExcluding(ctx,W,H,triAPts,triBPts,fillStyle){
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0,0,W,H);
+  ctx.moveTo(triBPts[0].sx,triBPts[0].sy);
+  ctx.lineTo(triBPts[1].sx,triBPts[1].sy);
+  ctx.lineTo(triBPts[2].sx,triBPts[2].sy);
+  ctx.closePath();
+  ctx.clip('evenodd');
+
+  ctx.beginPath();
+  ctx.moveTo(triAPts[0].sx,triAPts[0].sy);
+  ctx.lineTo(triAPts[1].sx,triAPts[1].sy);
+  ctx.lineTo(triAPts[2].sx,triAPts[2].sy);
+  ctx.closePath();
+  ctx.fillStyle=fillStyle;
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawStarFrustum(ctx,s,baseVerts,topVerts,baseColor,topColor){
   const basePts=baseVerts.map(v=>s(v.x,v.y,v.z));
   const topPts=topVerts.map(v=>s(v.x,v.y,v.z));
@@ -1338,8 +1412,16 @@ function drawStarPanel(panel){
   const {r,g,b}=currentColor;
   const rn=r/255,gn=g/255,bn=b/255;
   const cmyk=toCMYK(r,g,b);
-  const rgbw=toRGBW(r,g,b);
+  const rgbw=getRGBW(r,g,b,panel.rgbwFormula);
   const centroidScreens=[];
+
+  // The real camera direction, in the same world coordinates as everything
+  // else here — used below to decide which base is currently facing us.
+  const viewDir={
+    x:Math.cos(panel.rotX)*Math.sin(panel.rotY),
+    y:Math.sin(panel.rotX),
+    z:Math.cos(panel.rotX)*Math.cos(panel.rotY)
+  };
 
   // ── RGB Roof — exact, flat, no lift. The one that never needed a 4th axis.
   if(panel.showRoof){
@@ -1354,8 +1436,18 @@ function drawStarPanel(panel){
   }
 
   // ── CMY Roof — the flat ink-only reading, filled solid with the pure
-  // reconstruction color (what pure ink alone looks like, no K).
+  // reconstruction color (what pure ink alone looks like, no K) — plus K's
+  // own triangle underneath, since K isn't assumed by C,M,Y at all. A pure
+  // gray has c=m=y=0 exactly (the ink triangle collapses to a point), so
+  // without this, grays would show nothing here — now they show K alone.
   if(panel.showCMYRoof){
+    const kVerts=starKVerts(cmyk.k);
+    const kPts=kVerts.map(v=>s(v.x,v.y,v.z));
+    const kColor=panel.cmyBlackMode==='theoretical' ? THEORETICAL_CMY_BLACK : {r:0,g:0,b:0};
+    ctx.beginPath(); ctx.moveTo(kPts[0].sx,kPts[0].sy); ctx.lineTo(kPts[1].sx,kPts[1].sy); ctx.lineTo(kPts[2].sx,kPts[2].sy); ctx.closePath();
+    ctx.fillStyle=`rgba(${kColor.r},${kColor.g},${kColor.b},0.5)`; ctx.fill();
+    ctx.strokeStyle=`rgba(${kColor.r},${kColor.g},${kColor.b},0.9)`; ctx.lineWidth=1.6; ctx.stroke();
+
     const verts=starCMYKGhostVerts(cmyk.c,cmyk.m,cmyk.y);
     const pts=verts.map(v=>s(v.x,v.y,v.z));
     const reconColor=cmyReconColor(cmyk.c,cmyk.m,cmyk.y);
@@ -1372,6 +1464,15 @@ function drawStarPanel(panel){
   // frustum: base = pure ink at z=0, top = true color at the K-height,
   // connected as one solid so the relationship is visible, not implied.
   if(panel.showCMYK){
+    // The C-M-Y base's outward normal is always exactly (0,0,1) — apex is
+    // below. A single-sided tint: visible only when that side faces the
+    // camera, fading smoothly to nothing at grazing/edge-on angles (so a
+    // true side-on view naturally shows none of it, on either base).
+    const cmyFacing=Math.max(0,-viewDir.z);
+    if(cmyFacing>0.002){
+      fillTriExcluding(ctx,W,H,[pC,pM,pY],[pR,pG,pB],`rgba(120,105,75,${(cmyFacing*0.24).toFixed(3)})`);
+    }
+
     const apexB=P({x:0,y:0,z:-STAR_H});
     [[pC,'rgba(70,210,220,0.65)'],[pM,'rgba(230,70,210,0.65)'],[pY,'rgba(230,220,60,0.65)']].forEach(([p,col])=>{
       ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.lineTo(apexB.sx,apexB.sy);
@@ -1393,6 +1494,12 @@ function drawStarPanel(panel){
   // R/G/B corners up to the white apex, plus this color's frustum from pure
   // chroma (base) to the true color (top).
   if(panel.showRGBW){
+    // R-G-B base's outward normal is always exactly (0,0,-1) — apex above.
+    const rgbFacing=Math.max(0,viewDir.z);
+    if(rgbFacing>0.002){
+      fillTriExcluding(ctx,W,H,[pR,pG,pB],[pC,pM,pY],`rgba(120,105,75,${(rgbFacing*0.24).toFixed(3)})`);
+    }
+
     const apexW=P({x:0,y:0,z:STAR_H});
     [[pR,'rgba(220,80,70,0.65)'],[pG,'rgba(70,200,80,0.65)'],[pB,'rgba(70,120,220,0.65)']].forEach(([p,col])=>{
       ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.lineTo(apexW.sx,apexW.sy);
